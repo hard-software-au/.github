@@ -22,7 +22,7 @@ for arg in "$@"; do
 done
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-ORG="your-org-name"          # ← replace with your GitHub organisation slug
+ORG="hard-software-au"          # ← replace with your GitHub organisation slug
 
 PR_BRANCH="chore/add-naming-convention-workflows"
 PR_TITLE="chore: add branch name and PR title check workflows"
