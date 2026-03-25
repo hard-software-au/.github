@@ -1,0 +1,42 @@
+name: Auto Tag on Push to Master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to push tags
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
+
+      - name: Get latest tag and auto-increment
+        id: tagger
+        run: |
+          # Get the latest tag (assumes vN format), default to v0 if none
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+$' | head -n 1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            NEW_TAG="v1"
+          else
+            # Strip the 'v' prefix, increment, re-add prefix
+            VERSION_NUM=$(echo "$LATEST_TAG" | sed 's/v//')
+            NEW_TAG="v$((VERSION_NUM + 1))"
+          fi
+
+          echo "New tag: $NEW_TAG"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.tagger.outputs.new_tag }}
+          git push origin ${{ steps.tagger.outputs.new_tag }}
