@@ -9,22 +9,30 @@
 #   - git configured with credentials that can push to the org
 #
 # Usage:
-#   ./rollout-workflows.sh            # live run — pushes branches and opens PRs
-#   ./rollout-workflows.sh --dry-run  # preview only — no git push, no PRs
+#   ./rollout-workflows.sh                        # live run — all repos
+#   ./rollout-workflows.sh --dry-run              # preview only — no git push, no PRs
+#   ./rollout-workflows.sh --repo my-repo-name    # target a single repo
+#   ./rollout-workflows.sh --dry-run --repo my-repo-name
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
-# ── Dry-run flag ──────────────────────────────────────────────────────────────
+# ── Flags ────────────────────────────────────────────────────────────────────
 DRY_RUN=false
-for arg in "$@"; do
-  [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
+ONLY_REPO=""
+while (( $# > 0 )); do
+  case "$1" in
+    --dry-run) DRY_RUN=true ;;
+    --repo)    shift; ONLY_REPO="$1" ;;
+    *) echo "Unknown argument: $1"; exit 1 ;;
+  esac
+  shift
 done
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 ORG="hard-software-au"          # ← replace with your GitHub organisation slug
 
-PR_BRANCH="chore/add-naming-convention-workflows"
+PR_BRANCH="bot/chore/add-naming-convention-workflows"
 PR_TITLE="chore: add branch name and PR title check workflows"
 PR_BODY="Adds \`branch-name-check.yml\` and \`pr-title-check.yml\` to enforce the team's naming conventions.\n\nSee the org \`.github\` repo README for details."
 
@@ -77,6 +85,11 @@ for REPO in ${(f)REPOS}; do
   if [[ "$REPO_NAME" == "infolite-core" || "$REPO_NAME" == ".github" ]]; then
     SKIPPED+=("$REPO_NAME")
     echo "⏭  $REPO_NAME — skipped (excluded)"
+    continue
+  fi
+
+  # If --repo was specified, skip everything else
+  if [[ -n "$ONLY_REPO" && "$REPO_NAME" != "$ONLY_REPO" ]]; then
     continue
   fi
 
