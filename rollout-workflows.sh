@@ -44,7 +44,7 @@ if ! gh auth status &>/dev/null; then
   exit 1
 fi
 
-for f in branch-name-check.yml pr-title-check.yml; do
+for f in branch-name-check.yml pr-title-check.yml auto-tag.yml; do
   [[ -f "$WORKFLOW_SRC_DIR/$f" ]] || {
     echo "ERROR: source file not found: $WORKFLOW_SRC_DIR/$f"
     exit 1
@@ -92,8 +92,8 @@ for REPO in ${(f)REPOS}; do
 
   DEST_DIR="$CLONE_DIR/.github/workflows"
 
-  # Skip if both files already exist
-  if [[ -f "$DEST_DIR/branch-name-check.yml" && -f "$DEST_DIR/pr-title-check.yml" ]]; then
+  # Skip if all files already exist
+  if [[ -f "$DEST_DIR/branch-name-check.yml" && -f "$DEST_DIR/pr-title-check.yml" && -f "$DEST_DIR/auto-tag.yml" ]]; then
     echo "  ✓ workflows already present — skipping"
     ALREADY_DONE+=("$REPO_NAME")
     continue
@@ -110,11 +110,12 @@ for REPO in ${(f)REPOS}; do
   mkdir -p "$DEST_DIR"
   cp "$WORKFLOW_SRC_DIR/branch-name-check.yml" "$DEST_DIR/"
   cp "$WORKFLOW_SRC_DIR/pr-title-check.yml"    "$DEST_DIR/"
+  cp "$WORKFLOW_SRC_DIR/auto-tag.yml"          "$DEST_DIR/"
 
   pushd "$CLONE_DIR" >/dev/null
 
   git checkout -b "$PR_BRANCH"
-  git add .github/workflows/branch-name-check.yml .github/workflows/pr-title-check.yml
+  git add .github/workflows/branch-name-check.yml .github/workflows/pr-title-check.yml .github/workflows/auto-tag.yml
   git commit -m "$PR_TITLE"
 
   if ! git push origin "$PR_BRANCH" --quiet 2>/dev/null; then
