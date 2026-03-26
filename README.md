@@ -44,4 +44,4 @@ Valid intents: `feat` | `fix` | `chore` | `refactor` | `docs` | `spike`
 
 ## Adding workflows to a new repo
 
-Copy the workflow files from `infolite-core/.github/workflows/` into the new repo's `.github/workflows/` directory, then enable branch protection rules in **Settings → Branches** to require the checks to pass before merging.
+Copy the workflow files from `<repo>/.github/workflows/` into the new repo's `.github/workflows/` directory, then enable branch protection rules in **Settings → Branches** to require the checks to pass before merging.
