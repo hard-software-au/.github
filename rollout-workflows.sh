@@ -138,16 +138,16 @@ for REPO in ${(f)REPOS}; do
     continue
   fi
 
-  gh pr create \
+  PR_URL=$(gh pr create \
     --title  "$PR_TITLE" \
     --body   "$(printf '%b' "$PR_BODY")" \
     --base   "$DEFAULT_BRANCH" \
-    --head   "$PR_BRANCH"
+    --head   "$PR_BRANCH")
 
   popd >/dev/null
 
-  echo "  ✓ PR created"
-  CREATED+=("$REPO_NAME")
+  echo "  ✓ PR created: $PR_URL"
+  CREATED+=("$REPO_NAME|$PR_URL")
 done
 
 # ── Summary ────────────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ fi
 
 if ! $DRY_RUN && (( ${#CREATED[@]} > 0 )); then
   echo "\n  New PRs:"
-  for r in $CREATED; do echo "    • $r"; done
+  for entry in $CREATED; do echo "    • ${entry%%|*}: ${entry##*|}"; done
 fi
 
 if (( ${#FAILED[@]} > 0 )); then
