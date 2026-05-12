@@ -1,0 +1,143 @@
+name: PR Description First Push
+
+on:
+  pull_request:
+    types: [opened]
+  workflow_dispatch:
+
+jobs:
+  populate-pr-description:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Populate PR description on first open
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = pr.number;
+
+            const currentBody = (pr.body || '').trim();
+            const marker = '<!-- pr-body-generated -->';
+
+            const normalize = (value) =>
+              value
+                .replace(/## Description/gi, '')
+                .replace(/## References/gi, '')
+                .replace(/## Screenshots/gi, '')
+                .replace(/## Risks/gi, '')
+                .replace(/- List the key changes or features implemented\./gi, '')
+                .replace(/- Jira:\s*https:\/\/hardsoftware\.atlassian\.net\/browse\/HS-123/gi, '')
+                .replace(/- Freshdesk:\s*https:\/\/support\.hardsoftware\.com\/a\/tickets\/1234/gi, '')
+                .replace(/_N\/A_/gi, '')
+                .replace(/- \*\*None\|Low\|Medium\|High\*\*:\s*Describe the risks associated with this change\./gi, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            const isTemplateOnly = currentBody.length > 0 && normalize(currentBody).length === 0;
+
+            if (currentBody.includes(marker)) {
+              core.info('Body already generated previously. Skipping update.');
+              return;
+            }
+
+            if (currentBody.length > 0 && !isTemplateOnly) {
+              core.info('PR body already contains user content. Skipping update.');
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+
+            const changedFileNames = files.map((f) => f.filename);
+            const topFiles = changedFileNames.slice(0, 8);
+            const commitSubjects = commits
+              .map((c) => c.commit?.message?.split('\n')[0]?.trim())
+              .filter(Boolean)
+              .slice(0, 5);
+
+            const title = pr.title || '';
+            const branchName = context.payload.pull_request.head.ref || '';
+            const jiraFromBranch = branchName.match(/([A-Z]+-\d+)/);
+            const jiraFromTitle = title.match(/\[([A-Z]+-\d+)\]/);
+            const jiraId = jiraFromBranch
+              ? jiraFromBranch[1]
+              : (jiraFromTitle ? jiraFromTitle[1] : null);
+
+            const infraOrSecurityTouched = changedFileNames.some((name) =>
+              /(infrastructure|ansible|terraform|bicep|docker|deploy|workflow|auth|security|iam|secrets|vault)/i.test(name)
+            );
+
+            const riskLevel = infraOrSecurityTouched ? 'Medium' : 'Low';
+            const riskReason = infraOrSecurityTouched
+              ? 'Touches infrastructure, deployment, or security-sensitive areas.'
+              : 'Scoped code/config changes with no infra or security critical paths detected.';
+
+            const descriptionLines = [];
+            if (commitSubjects.length > 0) {
+              descriptionLines.push(...commitSubjects.map((line) => `- ${line}`));
+            } else {
+              descriptionLines.push('- Updates included in this pull request.');
+            }
+
+            if (topFiles.length > 0) {
+              descriptionLines.push('');
+              descriptionLines.push('Changed files (sample):');
+              descriptionLines.push(...topFiles.map((file) => `- ${file}`));
+              if (changedFileNames.length > topFiles.length) {
+                descriptionLines.push(`- ...and ${changedFileNames.length - topFiles.length} more file(s)`);
+              }
+            }
+
+            const referencesLines = [];
+            if (jiraId) {
+              referencesLines.push(`- Jira: https://hardsoftware.atlassian.net/browse/${jiraId}`);
+            } else {
+              referencesLines.push('- Jira: N/A');
+            }
+            referencesLines.push('- Freshdesk: N/A');
+
+            const newBody = [
+              '## Description',
+              '',
+              ...descriptionLines,
+              '',
+              '## References',
+              '',
+              ...referencesLines,
+              '',
+              '## Screenshots',
+              '',
+              '_N/A_',
+              '',
+              '## Risks',
+              '',
+              `- **${riskLevel}**: ${riskReason}`,
+              '',
+              marker,
+            ].join('\n');
+
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number,
+              body: newBody,
+            });
+
+            core.info('PR body generated successfully.');

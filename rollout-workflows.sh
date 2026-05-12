@@ -1,8 +1,8 @@
 #!/bin/zsh
 # rollout-workflows.sh
 #
-# Copies branch-name-check.yml and pr-title-check.yml to every repo in a GitHub
-# org and opens a PR in each one.  Repos that already have both files are skipped.
+# Copies workflow templates from this repo into every repo in a GitHub
+# org and opens a PR in each one. Repos that already have all workflow files are skipped.
 #
 # Requirements:
 #   - gh CLI installed and authenticated  (brew install gh)
@@ -33,8 +33,8 @@ done
 ORG="hard-software-au"          # ← replace with your GitHub organisation slug
 
 PR_BRANCH="bot/chore/add-naming-convention-workflows"
-PR_TITLE="chore: add branch name and PR title check workflows"
-PR_BODY="Adds \`branch-name-check.yml\` and \`pr-title-check.yml\` to enforce the team's naming conventions.\n\nSee the org \`.github\` repo README for details."
+PR_TITLE="chore: add org standard GitHub workflows"
+PR_BODY="Adds standard GitHub workflows from the org \`.github\` repo, including branch naming, PR title checks, auto-tagging, and first-push PR description bootstrap.\n\nSee the org \`.github\` repo README for details."
 
 # Source workflow files (sit alongside this script in the .github repo)
 SCRIPT_DIR="${${(%):-%x}:A:h}"
@@ -52,7 +52,7 @@ if ! gh auth status &>/dev/null; then
   exit 1
 fi
 
-for f in branch-name-check.yml pr-title-check.yml auto-tag.yml; do
+for f in branch-name-check.yml pr-title-check.yml auto-tag.yml pr-description-first-push.yml; do
   [[ -f "$WORKFLOW_SRC_DIR/$f" ]] || {
     echo "ERROR: source file not found: $WORKFLOW_SRC_DIR/$f"
     exit 1
@@ -106,7 +106,7 @@ for REPO in ${(f)REPOS}; do
   DEST_DIR="$CLONE_DIR/.github/workflows"
 
   # Skip if all files already exist
-  if [[ -f "$DEST_DIR/branch-name-check.yml" && -f "$DEST_DIR/pr-title-check.yml" && -f "$DEST_DIR/auto-tag.yml" ]]; then
+  if [[ -f "$DEST_DIR/branch-name-check.yml" && -f "$DEST_DIR/pr-title-check.yml" && -f "$DEST_DIR/auto-tag.yml" && -f "$DEST_DIR/pr-description-first-push.yml" ]]; then
     echo "  ✓ workflows already present — skipping"
     ALREADY_DONE+=("$REPO_NAME")
     continue
@@ -124,11 +124,12 @@ for REPO in ${(f)REPOS}; do
   cp "$WORKFLOW_SRC_DIR/branch-name-check.yml" "$DEST_DIR/"
   cp "$WORKFLOW_SRC_DIR/pr-title-check.yml"    "$DEST_DIR/"
   cp "$WORKFLOW_SRC_DIR/auto-tag.yml"          "$DEST_DIR/"
+  cp "$WORKFLOW_SRC_DIR/pr-description-first-push.yml" "$DEST_DIR/"
 
   pushd "$CLONE_DIR" >/dev/null
 
   git checkout -b "$PR_BRANCH"
-  git add .github/workflows/branch-name-check.yml .github/workflows/pr-title-check.yml .github/workflows/auto-tag.yml
+  git add .github/workflows/branch-name-check.yml .github/workflows/pr-title-check.yml .github/workflows/auto-tag.yml .github/workflows/pr-description-first-push.yml
   git commit -m "$PR_TITLE"
 
   if ! git push origin "$PR_BRANCH" --quiet 2>/dev/null; then

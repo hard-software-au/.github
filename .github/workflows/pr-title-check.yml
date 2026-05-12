@@ -1,0 +1,49 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+jobs:
+  check-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title convention
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "Checking PR title: $TITLE"
+
+          # Format: {intent}: [{HS-123}] summary
+          # With Jira:    chore: [HS-169] remove local timezone and show AEMO timezone
+          # Without Jira: feat: add planned outages
+          VALID_INTENTS="feat|fix|chore|refactor|docs|spike"
+          PATTERN="^($VALID_INTENTS): (\[[A-Z]+-[0-9]+\] ).+$|^($VALID_INTENTS): [a-z].+$"
+
+          if [[ "$TITLE" =~ $PATTERN ]]; then
+            echo "✓ PR title follows convention."
+          else
+            echo "✗ PR title does not follow the convention."
+            echo ""
+            echo "─────────────────────────────────────────────────"
+            echo "Expected format:"
+            echo "  With Jira issue:    {intent}: [{HS-123}] summary"
+            echo "  Without Jira issue: {intent}: summary"
+            echo ""
+            echo "Valid intents: feat | fix | chore | refactor | docs | spike"
+            echo ""
+            echo "Intent meanings:"
+            echo "  feat     — new feature"
+            echo "  fix      — bug fix"
+            echo "  chore    — config updates, dependency bumps, etc."
+            echo "  refactor — code refactor, no new feature"
+            echo "  docs     — documentation only"
+            echo "  spike    — experiment / exploration"
+            echo ""
+            echo "Examples:"
+            echo "  chore: [HS-169] remove local timezone and show AEMO timezone"
+            echo "  feat: [HS-121] add planned outages"
+            echo "  fix: correct login redirect"
+            echo "  spike: experiment with metrics"
+            echo "─────────────────────────────────────────────────"
+            exit 1
+          fi
