@@ -18,6 +18,7 @@ Use this checklist to set up PR description auto-population exactly once (on PR 
 
 - [x] Workflow trigger is `pull_request` with `types: [opened]` only.
 - [x] `synchronize` is not used for body generation.
+- [x] Manual trigger exists with `workflow_dispatch` for operator-driven reruns.
 - [ ] Optional: include `reopened` only if you want regeneration on reopen.
 
 ## 3) Add safe write conditions
@@ -29,6 +30,7 @@ Use this checklist to set up PR description auto-population exactly once (on PR 
 ## 4) Decide generation source
 
 - [x] Source inputs are deterministic (PR title, changed files, commit messages, diff stats).
+- [x] Jira key is extracted from branch name first (fallback to PR title).
 - [x] Section mapping is stable (for example, infer risks from touched infrastructure/security files).
 - [x] Output format matches template headings exactly.
 
@@ -55,8 +57,14 @@ Use this checklist to set up PR description auto-population exactly once (on PR 
 ## 8) Rollout and documentation
 
 - [x] Add workflow to this repo, then roll out to target repos.
+- [x] Ensure runnable workflow exists in `.github/workflows/` path.
 - [x] Document behavior in [README.md](README.md).
 - [ ] Share team guidance: when to trust generated text and when to edit manually.
+
+## 9) Troubleshooting notes
+
+- [x] Confirmed: workflows do not run when stored outside `.github/workflows/`.
+- [x] Confirmed: `workflow_dispatch` "Run workflow" appears only after the workflow exists on the default branch.
 
 ## Suggested policy (quick default)
 
