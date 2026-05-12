@@ -17,7 +17,7 @@ It prompts for:
 
 ## Related conventions
 
-Individual repos should also include the following GitHub Actions workflows to enforce naming conventions. See `infolite-core` for reference implementations:
+Individual repos should also include the following GitHub Actions workflows. See `infolite-core` for reference implementations:
 
 ### Branch naming — `branch-name-check.yml`
 Validates that branch names follow the format:
@@ -46,11 +46,19 @@ Automatically creates a git tag on merges to the default branch based on the PR 
 - `fix` → bumps patch version
 - `chore` / `refactor` / `docs` / `spike` → no tag
 
+### PR description bootstrap (first push only) — `pr-description-first-push.yml`
+Auto-populates the PR description once when a PR is opened.
+
+- Trigger: `pull_request` with `types: [opened]`
+- Safety: only writes if body is empty or still template-only
+- Manual edits are preserved after the first write
+- Includes a marker comment to avoid accidental rewrites
+
 ---
 
 ## Adding workflows to all repos — `rollout-workflows.sh`
 
-The `rollout-workflows.sh` script automates rolling out the three workflow files (`branch-name-check.yml`, `pr-title-check.yml`, `auto-tag.yml`) to every repo in the organisation by opening a PR in each one.
+The `rollout-workflows.sh` script automates rolling out workflow files (`branch-name-check.yml`, `pr-title-check.yml`, `auto-tag.yml`, `pr-description-first-push.yml`) to every repo in the organisation by opening a PR in each one.
 
 ### Requirements
 
@@ -69,10 +77,10 @@ Clones every repo and checks which ones are missing the workflows. Prints a list
 ```sh
 ./rollout-workflows.sh
 ```
-For each repo that doesn't already have all three workflow files, the script:
+For each repo that doesn't already have all workflow files, the script:
 1. Clones the repo (shallow)
 2. Creates branch `chore/add-naming-convention-workflows`
-3. Copies the three workflow files into `.github/workflows/`
+3. Copies the workflow files into `.github/workflows/`
 4. Commits, pushes, and opens a PR
 
 Repos that already have all three files are skipped automatically. `infolite-core` and `.github` itself are always excluded.
