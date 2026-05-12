@@ -3,6 +3,7 @@ name: PR Description First Push
 on:
   pull_request:
     types: [opened]
+  workflow_dispatch:
 
 jobs:
   populate-pr-description:
