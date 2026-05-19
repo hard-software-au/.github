@@ -23,7 +23,7 @@ repos:
         name: prettier (code formatter)
         # files: provided by caller (e.g., ^src/, ^app/)
         language: node
-        entry: prettier --write
+        entry: prettier --check
         additional_dependencies:
           - prettier
         types_or: [yaml, json, markdown, javascript, ts, css, html]
@@ -34,7 +34,7 @@ repos:
     hooks:
       - id: detect-secrets
         name: detect-secrets (secret scanning)
-        language: script
+        language: system
         entry: detect-secrets-hook
         args: ['--baseline', '.secrets.baseline']
         exclude: \.secrets\.baseline
