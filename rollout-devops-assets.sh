@@ -141,8 +141,8 @@ FAILED=()
 for REPO in ${(f)REPOS}; do
   REPO_NAME="${REPO##*/}"
 
-  # Skip the reference repo and the org-level .github repo
-  if [[ "$REPO_NAME" == "infolite-core" || "$REPO_NAME" == ".github" ]]; then
+  # Skip only the org-level .github repo
+  if [[ "$REPO_NAME" == ".github" ]]; then
     SKIPPED+=("$REPO_NAME")
     echo "⏭  $REPO_NAME — skipped (excluded)"
     continue

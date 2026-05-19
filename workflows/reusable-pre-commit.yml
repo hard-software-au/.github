@@ -157,10 +157,24 @@ jobs:
             detect-secrets scan > .secrets.baseline 2>/dev/null || true
           fi
 
-      - name: Run pre-commit checks (all files)
+      - name: Run pre-commit checks (changed files only)
         run: |
           set -o pipefail
-          pre-commit run --all-files \
+          # On pull_request: check only the files changed in this PR.
+          # On push to main/master: check files changed in the pushed commit(s).
+          # This avoids failing on pre-existing unlinted code in the repo.
+          if [[ -n "${{ github.base_ref }}" ]]; then
+            FROM_REF="origin/${{ github.base_ref }}"
+            TO_REF="${{ github.sha }}"
+          else
+            # push event — diff against the previous commit
+            FROM_REF="${{ github.event.before }}"
+            TO_REF="${{ github.sha }}"
+          fi
+
+          pre-commit run \
+            --from-ref "$FROM_REF" \
+            --to-ref "$TO_REF" \
             --verbose \
             --color=always \
             2>&1 | tee pre-commit.log
