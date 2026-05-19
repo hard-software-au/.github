@@ -68,7 +68,7 @@ fi
 # Check if bootstrap-hooks.sh exists
 if [[ ! -f "$SCRIPT_DIR/scripts/bootstrap-hooks.sh" ]]; then
     log_error "scripts/bootstrap-hooks.sh not found"
-    log_error "This script expects to be run from a repo that has been rolled out via rollout-workflows.sh"
+    log_error "This script expects to be run from a repo that has been rolled out via rollout-devops-assets.sh"
     exit 1
 fi
 

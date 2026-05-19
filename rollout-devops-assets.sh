@@ -1,5 +1,5 @@
 #!/bin/zsh
-# rollout-workflows.sh
+# rollout-devops-assets.sh
 #
 # Copies workflow templates from this repo into every repo in a GitHub
 # org and opens a PR in each one. Repos that already have all workflow files are skipped.
@@ -9,12 +9,12 @@
 #   - git configured with credentials that can push to the org
 #
 # Usage:
-#   ./rollout-workflows.sh                        # live run — all repos
-#   ./rollout-workflows.sh --dry-run              # preview only — no git push, no PRs
-#   ./rollout-workflows.sh --repo my-repo-name    # target a single repo
-#   ./rollout-workflows.sh --dry-run --repo my-repo-name
-#   ./rollout-workflows.sh --profiles baseline,python,ansible  # specify profiles
-#   ./rollout-workflows.sh --profiles baseline,ansible --repo infrastructure  # combine flags
+#   ./rollout-devops-assets.sh                        # live run — all repos
+#   ./rollout-devops-assets.sh --dry-run              # preview only — no git push, no PRs
+#   ./rollout-devops-assets.sh --repo my-repo-name    # target a single repo
+#   ./rollout-devops-assets.sh --dry-run --repo my-repo-name
+#   ./rollout-devops-assets.sh --profiles baseline,python,ansible  # specify profiles
+#   ./rollout-devops-assets.sh --profiles baseline,ansible --repo infrastructure  # combine flags
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail

@@ -27,7 +27,7 @@ Follow this sequence to minimise churn and make rollback easy:
 
 **Gate rule:** do not onboard additional repos until the previous step is green in both local runs and CI.
 
-**Rollout enforcement rule:** deployment of shared workflows and git-hook assets to downstream repos must occur via `.github/rollout-workflows.sh` only (no manual file copy PRs).
+**Rollout enforcement rule:** deployment of shared workflows and git-hook assets to downstream repos must occur via `.github/rollout-devops-assets.sh` only (no manual file copy PRs).
 
 ---
 
@@ -102,7 +102,7 @@ Current behavior snapshot (as of 2026-05-19):
   - Documented in `scripts/README.md`
 - [x] Bootstrap installs all required hook types by default: `pre-commit`, `pre-push`, `commit-msg`
 - [x] Each profile declares its own venv dependencies (via `# Install:` header comments; no kitchen-sink installs)
-- [x] Rollout integration: `rollout-workflows.sh` already deploys:
+- [x] Rollout integration: `rollout-devops-assets.sh` already deploys:
   - `scripts/*.sh` → target repo `scripts/`
   - Selected `pre-commit-profiles/*.yaml` (from `--profiles`) → target repo `pre-commit-profiles/`
   - `.github/workflows/*.yml` → target repo `.github/workflows/`
@@ -150,7 +150,7 @@ For each repo below, complete all steps:
   - Commit as-is; developers run it once to set up local hooks: `ansible-playbook playbook-dev_setup.yml`, then document the command in `README.md`
 - [ ] Create initial `.secrets.baseline` via `detect-secrets scan` and commit it
 - [ ] Add branch protection rule requiring the pre-commit CI check to pass before merge
-- [ ] Use `.github/rollout-workflows.sh` to open rollout PRs for this wiring (do not hand-craft copy PRs)
+- [ ] Use `.github/rollout-devops-assets.sh` to open rollout PRs for this wiring (do not hand-craft copy PRs)
 
 ### Migration order
 
