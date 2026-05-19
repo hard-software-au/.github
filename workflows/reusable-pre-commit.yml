@@ -96,6 +96,15 @@ jobs:
           echo "Generated .pre-commit-config.yaml:"
           cat .pre-commit-config.yaml
 
+      - name: Normalize generated config for CI
+        run: |
+          # Guardrail: enforce CI-safe settings even if an older profile revision is fetched.
+          sed -i.bak 's/entry: prettier --write/entry: prettier --check/g' .pre-commit-config.yaml
+          sed -i.bak '/id: detect-secrets/{n;s/language: script/language: system/;}' .pre-commit-config.yaml
+          rm -f .pre-commit-config.yaml.bak
+          echo "Normalized .pre-commit-config.yaml:"
+          cat .pre-commit-config.yaml
+
       - name: Install pre-commit and profile dependencies
         env:
           PROFILES: ${{ inputs.profiles }}
