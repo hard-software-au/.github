@@ -105,9 +105,9 @@ Behavior:
 - Falls back to system `pip-audit` if installed
 - Warns and skips when `pip-audit` is unavailable
 
-## Integration with rollout-workflows.sh
+## Integration with rollout-devops-assets.sh
 
-The `.github/rollout-workflows.sh` script automatically deploys **all** `.sh` files from this directory to target repos:
+The `.github/rollout-devops-assets.sh` script automatically deploys **all** `.sh` files from this directory to target repos:
 - `.github/scripts/*.sh` → `scripts/*.sh` in target repo
 - `.github/pre-commit-profiles/*.yaml` → `pre-commit-profiles/` in target repo
 - `.github/workflows/*.yml` → `.github/workflows/` in target repo

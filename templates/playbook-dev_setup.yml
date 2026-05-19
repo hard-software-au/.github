@@ -1,0 +1,111 @@
+---
+# Developer pre-commit setup playbook (template)
+#
+# Customize this file for your repo and commit it to your repo root.
+# Update the profiles list below to match your repo's requirements.
+#
+# Usage:
+#   # First time: copy this template to your repo root and customize the profiles list
+#   ansible-playbook playbook-dev_setup.yml
+#
+# This playbook will:
+#   1. Install system prerequisites: gitleaks, Node.js (if needed)
+#   2. Run ./scripts/bootstrap-hooks.sh to set up pre-commit hooks
+#   3. Create local .venv with all tool dependencies
+#   4. Configure git hooks (pre-commit, pre-push, commit-msg)
+#
+# After setup, hooks will run automatically on every:
+#   - git commit (pre-commit stage)
+#   - git push (pre-push stage)
+#   - git commit -m "..." (commit-msg stage)
+#
+# Manual runs (if needed):
+#   source .venv/bin/activate
+#   pre-commit run --all-files
+#   deactivate
+
+- name: Set up local developer pre-commit hooks
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    # CUSTOMIZE THIS: update the profiles list to match your repo
+    # Options: baseline, python, node, ruby, ansible (any combination)
+    # Examples:
+    #   - Python project:     profiles: [baseline, python]
+    #   - Node.js project:    profiles: [baseline, node]
+    #   - Ruby on Rails:      profiles: [baseline, python, ruby]
+    #   - Ansible/IaC:        profiles: [baseline, ansible]
+    profiles: [baseline]
+
+  tasks:
+    - name: Install gitleaks (system prerequisite for secret detection)
+      become: true
+      package:
+        name: gitleaks
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Install gitleaks (macOS via Homebrew)
+      homebrew:
+        name: gitleaks
+        state: present
+      when: ansible_os_family == 'Darwin'
+
+    - name: Install Node.js (macOS, required for prettier hook)
+      homebrew:
+        name: node
+        state: present
+      when: 
+        - ansible_os_family == 'Darwin'
+        - "'node' in profiles or 'baseline' in profiles"
+
+    - name: Install Node.js (Debian, required for prettier hook)
+      become: true
+      package:
+        name: nodejs
+        state: present
+      when:
+        - ansible_os_family == 'Debian'
+        - "'node' in profiles or 'baseline' in profiles"
+
+    - name: Check if bootstrap-hooks.sh exists
+      stat:
+        path: "{{ playbook_dir }}/scripts/bootstrap-hooks.sh"
+      register: bootstrap_script
+
+    - name: Fail if bootstrap-hooks.sh not found
+      fail:
+        msg: "bootstrap-hooks.sh not found at {{ playbook_dir }}/scripts/bootstrap-hooks.sh. Did you run rollout?"
+      when: not bootstrap_script.stat.exists
+
+    - name: Make bootstrap-hooks.sh executable
+      file:
+        path: "{{ playbook_dir }}/scripts/bootstrap-hooks.sh"
+        mode: '0755'
+
+    - name: Run bootstrap-hooks.sh to set up pre-commit
+      command: "{{ playbook_dir }}/scripts/bootstrap-hooks.sh {{ profiles | join(' ') }}"
+      register: bootstrap_result
+      changed_when: true
+
+    - name: Display bootstrap output
+      debug:
+        msg: "{{ bootstrap_result.stdout_lines }}"
+      when: bootstrap_result.stdout_lines is defined
+
+    - name: Success message
+      debug:
+        msg:
+          - "✓ Pre-commit hooks installed successfully!"
+          - "✓ Your profiles: {{ profiles | join(', ') }}"
+          - ""
+          - "Hooks are now active and will run on:"
+          - "  • commit (pre-commit stage)"
+          - "  • push (pre-push stage)"
+          - "  • commit message validation (commit-msg stage)"
+          - ""
+          - "To run checks manually:"
+          - "  source .venv/bin/activate"
+          - "  pre-commit run --all-files"
+          - "  deactivate"

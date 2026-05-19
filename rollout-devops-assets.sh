@@ -1,5 +1,5 @@
 #!/bin/zsh
-# rollout-workflows.sh
+# rollout-devops-assets.sh
 #
 # Copies workflow templates from this repo into every repo in a GitHub
 # org and opens a PR in each one. Repos that already have all workflow files are skipped.
@@ -9,12 +9,12 @@
 #   - git configured with credentials that can push to the org
 #
 # Usage:
-#   ./rollout-workflows.sh                        # live run — all repos
-#   ./rollout-workflows.sh --dry-run              # preview only — no git push, no PRs
-#   ./rollout-workflows.sh --repo my-repo-name    # target a single repo
-#   ./rollout-workflows.sh --dry-run --repo my-repo-name
-#   ./rollout-workflows.sh --profiles baseline,python,ansible  # specify profiles
-#   ./rollout-workflows.sh --profiles baseline,ansible --repo infrastructure  # combine flags
+#   ./rollout-devops-assets.sh                        # live run — all repos
+#   ./rollout-devops-assets.sh --dry-run              # preview only — no git push, no PRs
+#   ./rollout-devops-assets.sh --repo my-repo-name    # target a single repo
+#   ./rollout-devops-assets.sh --dry-run --repo my-repo-name
+#   ./rollout-devops-assets.sh --profiles baseline,python,ansible  # specify profiles
+#   ./rollout-devops-assets.sh --profiles baseline,ansible --repo infrastructure  # combine flags
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -52,6 +52,7 @@ if [[ ! -d "$WORKFLOW_SRC_DIR" ]]; then
 fi
 HOOK_PROFILE_SRC_DIR="$SCRIPT_DIR/pre-commit-profiles"
 SCRIPTS_SRC_DIR="$SCRIPT_DIR/scripts"
+TEMPLATES_SRC_DIR="$SCRIPT_DIR/templates"
 
 # Determine selected profiles and validate them.
 if [[ ! -d "$HOOK_PROFILE_SRC_DIR" ]]; then
@@ -91,7 +92,14 @@ if [[ " ${SELECTED_PROFILES[*]} " == *" ansible "* ]]; then
   CONFIG_FILES_TO_DEPLOY+=("git-hook-config/.ansible-lint" "git-hook-config/.yamllint")
 fi
 
-PR_BODY="Rolls out standard GitHub workflows, pre-commit profiles, and helper scripts from the org \`.github\` repo.\n\n**Profiles**: $PROFILES_CANONICAL\n\nTo activate hooks locally, run: \`./scripts/bootstrap-hooks.sh ${SELECTED_PROFILES[*]}\`\n\nSee the org \`.github\` repo README for usage details."
+SETUP_METHOD=""
+if [[ -x "$(command -v ansible-playbook)" ]]; then
+  SETUP_METHOD="Ansible (recommended): \`ansible-playbook playbook-dev_setup.yml\`"
+else
+  SETUP_METHOD="Shell script: \`./bootstrap.sh\`"
+fi
+
+PR_BODY="Rolls out standard GitHub workflows, pre-commit profiles, and helper scripts from the org \`.github\` repo.\n\n**Profiles**: $PROFILES_CANONICAL\n\n**To set up pre-commit hooks locally:**\n\n1. Copy the setup playbook/script to your repo (included in this PR): playbook-dev_setup.yml or bootstrap.sh\n2. Customize the \`profiles\` list in your chosen file\n3. Run the setup:\n   $SETUP_METHOD\n\nBoth options do the same thing — choose whichever is available in your environment.\n\nAfter setup, hooks will run automatically on commit/push/commit-msg. See the org \`.github\` repo README for details."
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Pre-flight checks ──────────────────────────────────────────────────────────
@@ -187,6 +195,16 @@ for REPO in ${(f)REPOS}; do
     fi
   fi
 
+  # Copy setup templates to repo root (playbook and shell script options)
+  if [[ -d "$TEMPLATES_SRC_DIR" ]]; then
+    for template_file in playbook-dev_setup.yml bootstrap.sh; do
+      if [[ -f "$TEMPLATES_SRC_DIR/$template_file" ]]; then
+        cp "$TEMPLATES_SRC_DIR/$template_file" "$CLONE_DIR/$template_file"
+        [[ "$template_file" == "bootstrap.sh" ]] && chmod +x "$CLONE_DIR/$template_file"
+      fi
+    done
+  fi
+
   # Copy config files (based on selected profiles)
   for config_name in $CONFIG_FILES_TO_DEPLOY; do
     config_src="$SCRIPT_DIR/$config_name"
@@ -197,7 +215,7 @@ for REPO in ${(f)REPOS}; do
     fi
   done
 
-  if git -C "$CLONE_DIR" diff --quiet -- .github/workflows pre-commit-profiles scripts git-hook-config; then
+  if git -C "$CLONE_DIR" diff --quiet -- .github/workflows pre-commit-profiles scripts playbook-dev_setup.yml bootstrap.sh git-hook-config; then
     echo "  ✓ shared workflows/hooks/configs already present — skipping"
     ALREADY_DONE+=("$REPO_NAME")
     continue
@@ -215,6 +233,8 @@ for REPO in ${(f)REPOS}; do
   git add .github/workflows
   [[ -d pre-commit-profiles ]] && git add pre-commit-profiles
   [[ -d scripts ]] && git add scripts
+  [[ -f playbook-dev_setup.yml ]] && git add playbook-dev_setup.yml
+  [[ -f bootstrap.sh ]] && git add bootstrap.sh
   for config_name in $CONFIG_FILES_TO_DEPLOY; do
     [[ -f "$config_name" ]] && git add "$config_name"
   done
