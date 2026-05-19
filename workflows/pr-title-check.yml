@@ -17,7 +17,7 @@ jobs:
           # With Jira:    chore: [HS-169] remove local timezone and show AEMO timezone
           # Without Jira: feat: add planned outages
           VALID_INTENTS="feat|fix|chore|refactor|docs|spike"
-          PATTERN="^($VALID_INTENTS): (\[[A-Z]+-[0-9]+\] ).+$|^($VALID_INTENTS): [a-z].+$"
+            PATTERN="^($VALID_INTENTS): (\[HS-[0-9]+\] ).+$|^($VALID_INTENTS): [A-Za-z0-9].+$"
 
           if [[ "$TITLE" =~ $PATTERN ]]; then
             echo "✓ PR title follows convention."

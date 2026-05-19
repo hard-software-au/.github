@@ -1,0 +1,16 @@
+# Node.js/JavaScript pre-commit profile — applies to repos with JavaScript/TypeScript code.
+# Includes: linting (eslint), formatting (prettier via baseline).
+# Prerequisites: Node.js/npm must be installed on developer machine BEFORE running bootstrap.
+#   This profile uses language: node, so pre-commit will invoke hooks via npm (not managed by bootstrap).
+#   Venv dependencies: none.
+
+repos:
+  # ESLint — JavaScript/TypeScript linter and fixer.
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.9.0  # Latest stable (check https://github.com/eslint/eslint/releases)
+    hooks:
+      - id: eslint
+        name: eslint (linter)
+        args: [--fix]
+        types_or: [javascript, ts]
+        stages: [pre-push]

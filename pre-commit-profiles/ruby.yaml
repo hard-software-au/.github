@@ -1,0 +1,15 @@
+# Ruby pre-commit profile — applies to repos with Ruby code (e.g., Rails).
+# Includes: linting/formatting (rubocop), style checking.
+# Venv dependencies: rubocop, rubocop-rails (or via Gemfile).
+# Install: gem install rubocop rubocop-rails
+
+repos:
+  # Rubocop — Ruby linter and formatter.
+  - repo: https://github.com/rubocop/rubocop-precommit
+    rev: v1.3.1  # Latest stable (check https://github.com/rubocop/rubocop-precommit/releases)
+    hooks:
+      - id: rubocop
+        name: rubocop (linter/formatter)
+        args: [--auto-correct-all]
+        types: [ruby]
+        stages: [pre-push]

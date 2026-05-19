@@ -1,0 +1,14 @@
+tabWidth: 2
+singleQuote: false
+trailingComma: "none"
+proseWrap: "always"
+printWidth: 120
+overrides:
+  - files: "*.yml"
+    options:
+      singleQuote: false
+      bracketSpacing: true
+  - files: "*.yaml"
+    options:
+      singleQuote: false
+      bracketSpacing: true

@@ -13,11 +13,22 @@ jobs:
           BRANCH="${{ github.head_ref }}"
           echo "Checking branch: $BRANCH"
 
+            # Optional override for exceptional branch prefixes:
+            # Set repo/org variable ALLOWED_BRANCH_PREFIXES_REGEX to a regex like:
+            #   ^(dependabot|renovate|release-bot)$
+            ALLOWED_PREFIXES_REGEX="${{ vars.ALLOWED_BRANCH_PREFIXES_REGEX }}"
+
           # Skip long-lived/protected branches
           if [[ "$BRANCH" == "master" || "$BRANCH" == "main" || "$BRANCH" == "develop" || "$BRANCH" == "staging" ]]; then
             echo "Protected branch — skipping check."
             exit 0
           fi
+
+            BRANCH_PREFIX="${BRANCH%%/*}"
+            if [[ -n "$ALLOWED_PREFIXES_REGEX" && "$BRANCH_PREFIX" =~ $ALLOWED_PREFIXES_REGEX ]]; then
+              echo "Allowed branch prefix override matched ($BRANCH_PREFIX) — skipping check."
+              exit 0
+            fi
 
           # Format: {name}/{intent}/{optional-JIRA-123-}summary
           # With Jira:    rahmat/feat/HS-121-add-planned-outages

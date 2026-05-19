@@ -1,0 +1,15 @@
+---
+profile: moderate
+
+## Org default: keep this file generic.
+## Repo-specific exclude paths should be added in repo-local overrides, not here.
+
+## Rules moved to warn rather than fail — review these over time and promote to errors
+warn_list:
+  - no-changed-when           ## shell/command tasks ideally have changed_when; warn for now
+  - experimental              ## experimental rules may have false positives
+
+exclude_paths:
+  - .git/
+  - .dev-venv/
+  - .venv/

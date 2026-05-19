@@ -3,7 +3,12 @@ name: Auto Tag on Push to Master
 on:
   push:
     branches:
+      - main
       - master
+
+concurrency:
+  group: auto-tag-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   tag:
@@ -22,7 +27,7 @@ jobs:
         run: |
           # Get the latest tag (assumes vN format), default to v0 if none
           LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+$' | head -n 1)
-          
+
           if [ -z "$LATEST_TAG" ]; then
             NEW_TAG="v1"
           else
@@ -31,6 +36,12 @@ jobs:
             NEW_TAG="v$((VERSION_NUM + 1))"
           fi
 
+          # Idempotency guard: if candidate tag already exists (local or remote), bump until free
+          while git rev-parse "$NEW_TAG" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$NEW_TAG" >/dev/null 2>&1; do
+            VERSION_NUM=$(echo "$NEW_TAG" | sed 's/v//')
+            NEW_TAG="v$((VERSION_NUM + 1))"
+          done
+
           echo "New tag: $NEW_TAG"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
@@ -38,5 +49,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "${{ steps.tagger.outputs.new_tag }}" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/${{ steps.tagger.outputs.new_tag }}" >/dev/null 2>&1; then
+            echo "Tag already exists, skipping push: ${{ steps.tagger.outputs.new_tag }}"
+            exit 0
+          fi
           git tag ${{ steps.tagger.outputs.new_tag }}
           git push origin ${{ steps.tagger.outputs.new_tag }}
