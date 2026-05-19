@@ -30,12 +30,12 @@ name: Pre-commit Hooks
 on:
   pull_request:
   push:
-      branches: [main, master]
+    branches: [main, master]
 
 jobs:
   pre-commit:
     name: Pre-commit Checks
-      uses: ./.github/workflows/reusable-pre-commit.yml
+    uses: ./.github/workflows/reusable-pre-commit.yml
     with:
       profiles: baseline,python
       python-version: '3.11'

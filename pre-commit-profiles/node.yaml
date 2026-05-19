@@ -12,5 +12,5 @@ repos:
       - id: eslint
         name: eslint (linter)
         args: [--fix]
-        types: [javascript, ts]
+        types_or: [javascript, ts]
         stages: [pre-push]

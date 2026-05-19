@@ -1,8 +1,9 @@
 # Baseline pre-commit profile — applies to all repositories.
 # Includes: branch protection, secret detection, commit message validation, formatting.
-# Tool dependencies: gitleaks (system), prettier (node-based but language: node installs it).
+# Tool dependencies: gitleaks (system), prettier (local node hook).
 # Install: pip install pre-commit detect-secrets
 # Venv: not required.
+# Prerequisites: Node.js/npm must be available for the local prettier hook.
 
 repos:
   # Standard pre-commit hooks (v6.0.0)
@@ -14,14 +15,17 @@ repos:
         args: [--branch, main, --branch, master]
         stages: [pre-commit]
 
-  # Prettier — code formatting (latest stable version).
+  # Prettier — code formatting (managed as a local node hook).
   # Scoped by caller: each repo's generated .pre-commit-config.yaml specifies files: pattern.
-  - repo: https://github.com/prettier/prettier
-    rev: latest
+  - repo: local
     hooks:
       - id: prettier
         name: prettier (code formatter)
         # files: provided by caller (e.g., ^src/, ^app/)
+        language: node
+        entry: prettier --write
+        additional_dependencies:
+          - prettier
         types_or: [yaml, json, markdown, javascript, ts, css, html]
         stages: [pre-commit]
 

@@ -41,9 +41,15 @@ ORG="hard-software-au"          # ← replace with your GitHub organisation slug
 PR_BRANCH="bot/chore/rollout-org-automation-standards"
 PR_TITLE="chore: rollout org workflow and hook standards"
 
-# Source workflow files (sit alongside this script in the .github repo)
+# Source workflow files from the dedicated workflows/ directory first, then fall back to the repo root for older layouts.
 SCRIPT_DIR="${${(%):-%x}:A:h}"
-WORKFLOW_SRC_DIR="$SCRIPT_DIR"
+WORKFLOW_SRC_DIR="$SCRIPT_DIR/workflows"
+if [[ ! -d "$WORKFLOW_SRC_DIR" ]]; then
+  WORKFLOW_SRC_DIR="$SCRIPT_DIR/.github/workflows"
+fi
+if [[ ! -d "$WORKFLOW_SRC_DIR" ]]; then
+  WORKFLOW_SRC_DIR="$SCRIPT_DIR"
+fi
 HOOK_PROFILE_SRC_DIR="$SCRIPT_DIR/pre-commit-profiles"
 SCRIPTS_SRC_DIR="$SCRIPT_DIR/scripts"
 
@@ -97,12 +103,6 @@ fi
 if ! gh auth status &>/dev/null; then
   echo "ERROR: not authenticated with gh.  Run: gh auth login"
   exit 1
-fi
-
-# Updated workflow source dir to .github/workflows
-WORKFLOW_SRC_DIR="$SCRIPT_DIR/.github/workflows"
-if [[ ! -d "$WORKFLOW_SRC_DIR" ]]; then
-  WORKFLOW_SRC_DIR="$SCRIPT_DIR"
 fi
 
 WORKFLOW_FILES=("$WORKFLOW_SRC_DIR"/*.yml)
@@ -160,64 +160,7 @@ for REPO in ${(f)REPOS}; do
   PROFILES_DEST_DIR="$CLONE_DIR/pre-commit-profiles"
   SCRIPTS_DEST_DIR="$CLONE_DIR/scripts"
 
-  # Check if any workflows are missing
-  MISSING_WORKFLOW=false
-  for src in $WORKFLOW_FILES; do
-    name="${src:t}"
-    if [[ ! -f "$DEST_DIR/$name" ]]; then
-      MISSING_WORKFLOW=true
-      break
-    fi
-  done
-
-  # Check if selected profiles are missing
-  MISSING_HOOK_PROFILES=false
-  for src in $PROFILE_FILES; do
-    name="${src:t}"
-    if [[ ! -f "$PROFILES_DEST_DIR/$name" ]]; then
-      MISSING_HOOK_PROFILES=true
-      break
-    fi
-  done
-
-  # Check if any helper scripts are missing
-  MISSING_HELPER_SCRIPTS=false
-  if [[ -d "$SCRIPTS_SRC_DIR" ]]; then
-    HELPER_SCRIPTS=("$SCRIPTS_SRC_DIR"/*.sh)
-    if (( ${#HELPER_SCRIPTS[@]} > 0 )); then
-      for src in $HELPER_SCRIPTS; do
-        name="${src:t}"
-        if [[ ! -f "$SCRIPTS_DEST_DIR/$name" ]]; then
-          MISSING_HELPER_SCRIPTS=true
-          break
-        fi
-      done
-    fi
-  fi
-
-  # Check if any config files are missing (based on selected profiles)
-  MISSING_CONFIG_FILES=false
-  for config_name in $CONFIG_FILES_TO_DEPLOY; do
-    if [[ -f "$SCRIPT_DIR/$config_name" && ! -f "$CLONE_DIR/$config_name" ]]; then
-      MISSING_CONFIG_FILES=true
-      break
-    fi
-  done
-
-  # Skip if there is nothing to rollout
-  if ! $MISSING_WORKFLOW && ! $MISSING_HOOK_PROFILES && ! $MISSING_HELPER_SCRIPTS && ! $MISSING_CONFIG_FILES; then
-    echo "  ✓ shared workflows/hooks/configs already present — skipping"
-    ALREADY_DONE+=("$REPO_NAME")
-    continue
-  fi
-
   DEFAULT_BRANCH=$(gh repo view "$REPO" --json defaultBranchRef --jq '.defaultBranchRef.name')
-
-  if $DRY_RUN; then
-    echo "  [dry-run] [profiles: $PROFILES_CANONICAL] would sync workflows+profiles+scripts+configs and open PR → $PR_BRANCH → $DEFAULT_BRANCH"
-    WOULD_CREATE+=("$REPO_NAME")
-    continue
-  fi
 
   mkdir -p "$DEST_DIR"
 
@@ -248,9 +191,24 @@ for REPO in ${(f)REPOS}; do
   for config_name in $CONFIG_FILES_TO_DEPLOY; do
     config_src="$SCRIPT_DIR/$config_name"
     if [[ -f "$config_src" ]]; then
-      cp "$config_src" "$CLONE_DIR/$config_name"
+      config_dest="$CLONE_DIR/$config_name"
+      mkdir -p "${config_dest:h}"
+      cp "$config_src" "$config_dest"
     fi
   done
+
+  if git -C "$CLONE_DIR" diff --quiet -- .github/workflows pre-commit-profiles scripts git-hook-config; then
+    echo "  ✓ shared workflows/hooks/configs already present — skipping"
+    ALREADY_DONE+=("$REPO_NAME")
+    continue
+  fi
+
+  if $DRY_RUN; then
+    echo "  [dry-run] [profiles: $PROFILES_CANONICAL] would sync workflows+profiles+scripts+configs and open PR → $PR_BRANCH → $DEFAULT_BRANCH"
+    WOULD_CREATE+=("$REPO_NAME")
+    continue
+  fi
+
   pushd "$CLONE_DIR" >/dev/null
 
   git checkout -b "$PR_BRANCH"

@@ -16,7 +16,7 @@
 set -euo pipefail
 
 # Configuration
-GITHUB_REPO_DIR="${GITHUB_REPO_DIR:-.github}"
+GITHUB_REPO_DIR="${GITHUB_REPO_DIR:-.}"
 PROFILE_DIR="$GITHUB_REPO_DIR/pre-commit-profiles"
 OUTPUT_FILE=".pre-commit-config.yaml"
 
@@ -79,9 +79,8 @@ log_info "Merging profiles: $*"
 for profile in "$@"; do
     log_info "  Adding profile: $profile"
     
-    # Extract repo entries from profile (from first "- repo:" until EOF or next profile marker)
-    # Skip comments and empty lines at start, keep indentation
-    awk '/^  - repo:/ { print; next } /^  - repo:/ { next } NR > 1 && /^[^ ]/ { exit } /^  [^ ]/ { print }' "$PROFILE_DIR/$profile.yaml" >> "$OUTPUT_FILE"
+    # Extract repo entries from profile starting at the first repo definition.
+    awk '/^  - repo:/ { in_repos=1 } in_repos { print }' "$PROFILE_DIR/$profile.yaml" >> "$OUTPUT_FILE"
     echo "" >> "$OUTPUT_FILE"
 done
 
@@ -93,8 +92,8 @@ GEM_PACKAGES=""
 HAS_NODE_PROFILE=false
 
 for profile in "$@"; do
-    # Check for Node.js profile (requires pre-existing npm setup)
-    if [[ "$profile" == "node" ]]; then
+    # Check for Node.js-backed hooks (baseline prettier + node profile require npm).
+    if [[ "$profile" == "node" || "$profile" == "baseline" ]]; then
         HAS_NODE_PROFILE=true
     fi
     
