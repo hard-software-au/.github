@@ -1,0 +1,24 @@
+name: Pre-commit Hooks
+
+# NOTE:
+# - This template requires `.github/workflows/reusable-pre-commit.yml` in the target repo.
+# - Replace `profiles` with the exact profile set for this repository before merging.
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  pre-commit:
+    name: Pre-commit Checks
+    # Replace the profile list below with profiles appropriate for your repo
+    # Examples:
+    #   Python project:     profiles: baseline,python
+    #   Node.js project:    profiles: baseline,node
+    #   Rails project:      profiles: baseline,python,ruby
+    #   Ansible/IaC:        profiles: baseline,ansible
+    uses: ./.github/workflows/reusable-pre-commit.yml
+    with:
+      profiles: baseline  # TODO: replace with repo-specific list (e.g. baseline,python)
+      python-version: '3.11'

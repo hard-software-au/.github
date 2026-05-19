@@ -1,0 +1,27 @@
+---
+extends: default
+
+## Org default: keep rules broadly applicable.
+## For generated YAML or repo-specific cases, add repo-local overrides.
+
+rules:
+  line-length: disable
+
+  truthy:
+    allowed-values:
+      - 'true'
+      - 'false'
+      - 'yes'
+      - 'no'
+    level: warning
+
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

@@ -13,17 +13,23 @@
 #   ./rollout-workflows.sh --dry-run              # preview only — no git push, no PRs
 #   ./rollout-workflows.sh --repo my-repo-name    # target a single repo
 #   ./rollout-workflows.sh --dry-run --repo my-repo-name
+#   ./rollout-workflows.sh --profiles baseline,python,ansible  # specify profiles
+#   ./rollout-workflows.sh --profiles baseline,ansible --repo infrastructure  # combine flags
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
+setopt null_glob
 
 # ── Flags ────────────────────────────────────────────────────────────────────
 DRY_RUN=false
 ONLY_REPO=""
+PROFILES="baseline"  # default: baseline only
+
 while (( $# > 0 )); do
   case "$1" in
-    --dry-run) DRY_RUN=true ;;
-    --repo)    shift; ONLY_REPO="$1" ;;
+    --dry-run)     DRY_RUN=true ;;
+    --repo)        shift; ONLY_REPO="$1" ;;
+    --profiles)    shift; PROFILES="$1" ;;
     *) echo "Unknown argument: $1"; exit 1 ;;
   esac
   shift
@@ -32,13 +38,54 @@ done
 # ── Configuration ─────────────────────────────────────────────────────────────
 ORG="hard-software-au"          # ← replace with your GitHub organisation slug
 
-PR_BRANCH="bot/chore/add-naming-convention-workflows"
-PR_TITLE="chore: add org standard GitHub workflows"
-PR_BODY="Adds standard GitHub workflows from the org \`.github\` repo, including branch naming, PR title checks, auto-tagging, and first-push PR description bootstrap.\n\nSee the org \`.github\` repo README for details."
+PR_BRANCH="bot/chore/rollout-org-automation-standards"
+PR_TITLE="chore: rollout org workflow and hook standards"
 
 # Source workflow files (sit alongside this script in the .github repo)
 SCRIPT_DIR="${${(%):-%x}:A:h}"
 WORKFLOW_SRC_DIR="$SCRIPT_DIR"
+HOOK_PROFILE_SRC_DIR="$SCRIPT_DIR/pre-commit-profiles"
+SCRIPTS_SRC_DIR="$SCRIPT_DIR/scripts"
+
+# Determine selected profiles and validate them.
+if [[ ! -d "$HOOK_PROFILE_SRC_DIR" ]]; then
+  echo "ERROR: pre-commit profiles directory not found at: $HOOK_PROFILE_SRC_DIR"
+  exit 1
+fi
+
+PROFILE_INPUT=(${(s:,:)PROFILES})
+SELECTED_PROFILES=()
+for profile in $PROFILE_INPUT; do
+  profile="${profile// /}"
+  [[ -z "$profile" ]] && continue
+  if [[ ! -f "$HOOK_PROFILE_SRC_DIR/$profile.yaml" ]]; then
+    echo "ERROR: unknown profile: $profile"
+    echo "Available profiles:"
+    ls -1 "$HOOK_PROFILE_SRC_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//' || true
+    exit 1
+  fi
+  SELECTED_PROFILES+=("$profile")
+done
+
+if (( ${#SELECTED_PROFILES[@]} == 0 )); then
+  echo "ERROR: no valid profiles selected"
+  exit 1
+fi
+
+PROFILE_FILES=()
+for profile in $SELECTED_PROFILES; do
+  PROFILE_FILES+=("$HOOK_PROFILE_SRC_DIR/$profile.yaml")
+done
+
+PROFILES_CANONICAL="$(IFS=,; echo "${SELECTED_PROFILES[*]}")"
+
+# Determine config files to deploy based on selected profiles (prettier always, ansible-specific configs conditionally)
+CONFIG_FILES_TO_DEPLOY=("git-hook-config/.prettierrc")
+if [[ " ${SELECTED_PROFILES[*]} " == *" ansible "* ]]; then
+  CONFIG_FILES_TO_DEPLOY+=("git-hook-config/.ansible-lint" "git-hook-config/.yamllint")
+fi
+
+PR_BODY="Rolls out standard GitHub workflows, pre-commit profiles, and helper scripts from the org \`.github\` repo.\n\n**Profiles**: $PROFILES_CANONICAL\n\nTo activate hooks locally, run: \`./scripts/bootstrap-hooks.sh ${SELECTED_PROFILES[*]}\`\n\nSee the org \`.github\` repo README for usage details."
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Pre-flight checks ──────────────────────────────────────────────────────────
@@ -52,12 +99,17 @@ if ! gh auth status &>/dev/null; then
   exit 1
 fi
 
-for f in branch-name-check.yml pr-title-check.yml auto-tag.yml pr-description-first-push.yml; do
-  [[ -f "$WORKFLOW_SRC_DIR/$f" ]] || {
-    echo "ERROR: source file not found: $WORKFLOW_SRC_DIR/$f"
-    exit 1
-  }
-done
+# Updated workflow source dir to .github/workflows
+WORKFLOW_SRC_DIR="$SCRIPT_DIR/.github/workflows"
+if [[ ! -d "$WORKFLOW_SRC_DIR" ]]; then
+  WORKFLOW_SRC_DIR="$SCRIPT_DIR"
+fi
+
+WORKFLOW_FILES=("$WORKFLOW_SRC_DIR"/*.yml)
+if (( ${#WORKFLOW_FILES[@]} == 0 )); then
+  echo "ERROR: no workflow templates found in: $WORKFLOW_SRC_DIR"
+  exit 1
+fi
 
 WORK_DIR=$(mktemp -d)
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -105,9 +157,56 @@ for REPO in ${(f)REPOS}; do
 
   DEST_DIR="$CLONE_DIR/.github/workflows"
 
-  # Skip if all files already exist
-  if [[ -f "$DEST_DIR/branch-name-check.yml" && -f "$DEST_DIR/pr-title-check.yml" && -f "$DEST_DIR/auto-tag.yml" && -f "$DEST_DIR/pr-description-first-push.yml" ]]; then
-    echo "  ✓ workflows already present — skipping"
+  PROFILES_DEST_DIR="$CLONE_DIR/pre-commit-profiles"
+  SCRIPTS_DEST_DIR="$CLONE_DIR/scripts"
+
+  # Check if any workflows are missing
+  MISSING_WORKFLOW=false
+  for src in $WORKFLOW_FILES; do
+    name="${src:t}"
+    if [[ ! -f "$DEST_DIR/$name" ]]; then
+      MISSING_WORKFLOW=true
+      break
+    fi
+  done
+
+  # Check if selected profiles are missing
+  MISSING_HOOK_PROFILES=false
+  for src in $PROFILE_FILES; do
+    name="${src:t}"
+    if [[ ! -f "$PROFILES_DEST_DIR/$name" ]]; then
+      MISSING_HOOK_PROFILES=true
+      break
+    fi
+  done
+
+  # Check if any helper scripts are missing
+  MISSING_HELPER_SCRIPTS=false
+  if [[ -d "$SCRIPTS_SRC_DIR" ]]; then
+    HELPER_SCRIPTS=("$SCRIPTS_SRC_DIR"/*.sh)
+    if (( ${#HELPER_SCRIPTS[@]} > 0 )); then
+      for src in $HELPER_SCRIPTS; do
+        name="${src:t}"
+        if [[ ! -f "$SCRIPTS_DEST_DIR/$name" ]]; then
+          MISSING_HELPER_SCRIPTS=true
+          break
+        fi
+      done
+    fi
+  fi
+
+  # Check if any config files are missing (based on selected profiles)
+  MISSING_CONFIG_FILES=false
+  for config_name in $CONFIG_FILES_TO_DEPLOY; do
+    if [[ -f "$SCRIPT_DIR/$config_name" && ! -f "$CLONE_DIR/$config_name" ]]; then
+      MISSING_CONFIG_FILES=true
+      break
+    fi
+  done
+
+  # Skip if there is nothing to rollout
+  if ! $MISSING_WORKFLOW && ! $MISSING_HOOK_PROFILES && ! $MISSING_HELPER_SCRIPTS && ! $MISSING_CONFIG_FILES; then
+    echo "  ✓ shared workflows/hooks/configs already present — skipping"
     ALREADY_DONE+=("$REPO_NAME")
     continue
   fi
@@ -115,21 +214,52 @@ for REPO in ${(f)REPOS}; do
   DEFAULT_BRANCH=$(gh repo view "$REPO" --json defaultBranchRef --jq '.defaultBranchRef.name')
 
   if $DRY_RUN; then
-    echo "  [dry-run] would add workflows and open PR → $PR_BRANCH → $DEFAULT_BRANCH"
+    echo "  [dry-run] [profiles: $PROFILES_CANONICAL] would sync workflows+profiles+scripts+configs and open PR → $PR_BRANCH → $DEFAULT_BRANCH"
     WOULD_CREATE+=("$REPO_NAME")
     continue
   fi
 
   mkdir -p "$DEST_DIR"
-  cp "$WORKFLOW_SRC_DIR/branch-name-check.yml" "$DEST_DIR/"
-  cp "$WORKFLOW_SRC_DIR/pr-title-check.yml"    "$DEST_DIR/"
-  cp "$WORKFLOW_SRC_DIR/auto-tag.yml"          "$DEST_DIR/"
-  cp "$WORKFLOW_SRC_DIR/pr-description-first-push.yml" "$DEST_DIR/"
 
+  # Copy all workflows dynamically
+  for src in $WORKFLOW_FILES; do
+    cp "$src" "$DEST_DIR/"
+  done
+
+  # Copy selected pre-commit profiles
+  mkdir -p "$PROFILES_DEST_DIR"
+  for src in $PROFILE_FILES; do
+    cp "$src" "$PROFILES_DEST_DIR/"
+  done
+
+  # Copy helper scripts if directory exists
+  if [[ -d "$SCRIPTS_SRC_DIR" ]]; then
+    HELPER_SCRIPTS=("$SCRIPTS_SRC_DIR"/*.sh)
+    if (( ${#HELPER_SCRIPTS[@]} > 0 )); then
+      mkdir -p "$SCRIPTS_DEST_DIR"
+      for src in $HELPER_SCRIPTS; do
+        cp "$src" "$SCRIPTS_DEST_DIR/"
+        chmod +x "$SCRIPTS_DEST_DIR/${src:t}"
+      done
+    fi
+  fi
+
+  # Copy config files (based on selected profiles)
+  for config_name in $CONFIG_FILES_TO_DEPLOY; do
+    config_src="$SCRIPT_DIR/$config_name"
+    if [[ -f "$config_src" ]]; then
+      cp "$config_src" "$CLONE_DIR/$config_name"
+    fi
+  done
   pushd "$CLONE_DIR" >/dev/null
 
   git checkout -b "$PR_BRANCH"
-  git add .github/workflows/branch-name-check.yml .github/workflows/pr-title-check.yml .github/workflows/auto-tag.yml .github/workflows/pr-description-first-push.yml
+  git add .github/workflows
+  [[ -d pre-commit-profiles ]] && git add pre-commit-profiles
+  [[ -d scripts ]] && git add scripts
+  for config_name in $CONFIG_FILES_TO_DEPLOY; do
+    [[ -f "$config_name" ]] && git add "$config_name"
+  done
   git commit -m "$PR_TITLE"
 
   if ! git push origin "$PR_BRANCH" --quiet 2>/dev/null; then
@@ -154,6 +284,9 @@ done
 # ── Summary ────────────────────────────────────────────────────────────────────
 echo "\n══════════════════════════════════════════════════════════"
 $DRY_RUN && echo "  DRY RUN — no changes were made." || echo "  Done."
+echo "  Profiles       : $PROFILES_CANONICAL"
+echo "  Config files   : ${CONFIG_FILES_TO_DEPLOY[*]}"
+echo ""
 if $DRY_RUN; then
   echo "  Would create PRs : ${#WOULD_CREATE[@]}"
 else

@@ -1,0 +1,50 @@
+# Baseline pre-commit profile — applies to all repositories.
+# Includes: branch protection, secret detection, commit message validation, formatting.
+# Tool dependencies: gitleaks (system), prettier (node-based but language: node installs it).
+# Install: pip install pre-commit detect-secrets
+# Venv: not required.
+
+repos:
+  # Standard pre-commit hooks (v6.0.0)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: no-commit-to-branch
+        name: not working on a protected branch
+        args: [--branch, main, --branch, master]
+        stages: [pre-commit]
+
+  # Prettier — code formatting (latest stable version).
+  # Scoped by caller: each repo's generated .pre-commit-config.yaml specifies files: pattern.
+  - repo: https://github.com/prettier/prettier
+    rev: latest
+    hooks:
+      - id: prettier
+        name: prettier (code formatter)
+        # files: provided by caller (e.g., ^src/, ^app/)
+        types_or: [yaml, json, markdown, javascript, ts, css, html]
+        stages: [pre-commit]
+
+  # Secret detection — local script wrapper (repo-specific baseline).
+  - repo: local
+    hooks:
+      - id: detect-secrets
+        name: detect-secrets (secret scanning)
+        language: script
+        entry: detect-secrets-hook
+        args: ['--baseline', '.secrets.baseline']
+        exclude: \.secrets\.baseline
+        stages: [pre-commit]
+
+      - id: gitleaks
+        name: gitleaks (credential leak detection)
+        language: system
+        entry: gitleaks protect --staged
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: commit-msg-check
+        name: commit message convention
+        language: script
+        entry: scripts/commit-msg-check.sh
+        stages: [commit-msg]

@@ -1,0 +1,44 @@
+# Ansible pre-commit profile — applies to repos with Ansible playbooks/roles.
+# Includes: linting (ansible-lint), YAML validation (yamllint), syntax checking, IaC scanning (checkov).
+# Venv dependencies: ansible, ansible-lint, yamllint, checkov.
+# Install: pip install ansible ansible-lint yamllint checkov
+
+repos:
+  # Ansible-lint — Ansible playbook linter.
+  - repo: https://github.com/ansible/ansible-lint.git
+    rev: v6.28.3  # Latest stable (check https://github.com/ansible/ansible-lint/releases)
+    hooks:
+      - id: ansible-lint
+        name: ansible-lint
+        files: ^.+\.(ya?ml)$
+        types: [yaml]
+        stages: [pre-push]
+
+  # Yamllint — YAML file linter.
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.35.1  # Latest stable (check https://github.com/adrienverge/yamllint/releases)
+    hooks:
+      - id: yamllint
+        name: yamllint
+        types: [yaml]
+        stages: [pre-push]
+
+  # Local Ansible tools (syntax check, security scanning).
+  - repo: local
+    hooks:
+      - id: ansible-syntax-check
+        name: ansible syntax check
+        language: script
+        entry: ansible-playbook --syntax-check
+        # Expected playbook naming convention: playbook-*.yml or playbook-*.yaml
+        files: >-
+          ^(.+/)?playbook-[^/]+\.ya?ml$
+        stages: [pre-push]
+
+      - id: checkov
+        name: checkov (IaC security scanning)
+        language: script
+        entry: checkov --quiet --directory . --skip-path .github
+        pass_filenames: false
+        files: ^.+\.ya?ml$
+        stages: [pre-push]
