@@ -76,25 +76,61 @@ The script automatically rolls out:
 - Shared git-hook assets when present (selected `pre-commit-profiles/*.yaml` and all `scripts/*.sh`)
 - Tool config files based on selected profiles (`git-hook-config/.prettierrc` always; `git-hook-config/.ansible-lint` and `git-hook-config/.yamllint` when `ansible` is selected)
 
-### Requirements
+For detailed setup and usage instructions, see the **Deployment Guide** section below.
 
-- [`gh` CLI](https://cli.github.com/) installed and authenticated (`brew install gh` then `gh auth login`)
+---
+
+## Deployment Guide: Setting up pre-commit hooks and workflows
+
+This section covers the complete deployment flow from two perspectives:
+
+1. **Org maintainer** — Rolling out shared workflows and profiles to all repos
+2. **Developer** — Setting up pre-commit hooks locally after rollout
+
+### Org Maintainer: Rolling out to multiple repos
+
+Use `rollout-workflows.sh` to deploy workflows, profiles, and bootstrap scripts to all org repos at once.
+
+**What gets deployed:**
+- GitHub Actions workflows (`.github/workflows/`)
+- Pre-commit hook profiles (`pre-commit-profiles/*.yaml`)
+- Helper scripts (`scripts/bootstrap-hooks.sh`, etc.)
+- Setup templates (`playbook-dev_setup.yml` and `bootstrap.sh`) — copy to repo root  
+- Tool config files (`.prettierrc`, `.ansible-lint`, `.yamllint`)
+- Reusable workflow that runs hooks in CI (`reusable-pre-commit.yml`)
+
+**Prerequisites:**
+- [`gh` CLI](https://cli.github.com/) installed and authenticated: `brew install gh` then `gh auth login`
 - Run from the root of this repo (so the script can find the workflow source files alongside it)
 
-### Usage
+**One-time setup (org maintainer only):**
 
-**Preview first (recommended):**
+1. Install prerequisites:
+   ```sh
+   brew install gh
+   gh auth login
+   ```
+
+2. Clone this repo (`.github`):
+   ```sh
+   git clone https://github.com/hard-software-au/.github.git
+   cd .github
+   ```
+
+**Preview which repos will be updated (recommended first step):**
+
 ```sh
 ./rollout-workflows.sh --dry-run
 ```
-Clones every repo and checks which ones are missing shared workflows/hooks. Prints a list of repos that *would* get a PR opened — no git push, no PRs created.
 
-Default profiles: if `--profiles` is not provided, the script uses `baseline`.
+Clones every repo and checks which ones are missing shared workflows/hooks. Prints a list of repos that *would* get a PR opened — no git push, no PRs created. Default profiles: if `--profiles` is not provided, the script uses `baseline`.
 
-**Live run:**
+**Deploy to all repos:**
+
 ```sh
 ./rollout-workflows.sh
 ```
+
 For each repo that is missing any managed workflow/hook asset, the script:
 1. Clones the repo (shallow)
 2. Creates branch `bot/chore/rollout-org-automation-standards`
@@ -105,14 +141,17 @@ For each repo that is missing any managed workflow/hook asset, the script:
 
 Repos that already have all managed assets are skipped automatically. `.github` itself is always excluded.
 
-**Target a single repo (dry-run or live):**
+**Deploy to a single repo (for testing):**
+
 ```sh
 ./rollout-workflows.sh --repo my-repo-name
 ./rollout-workflows.sh --dry-run --repo my-repo-name
 ```
+
 Only that repo is processed; all others are silently skipped. Use this to test the script on one repo before doing the full run.
 
-**Select profiles explicitly:**
+**Deploy with specific profiles:**
+
 ```sh
 ./rollout-workflows.sh --profiles baseline,python
 ./rollout-workflows.sh --profiles baseline,ansible --repo infrastructure
@@ -120,14 +159,178 @@ Only that repo is processed; all others are silently skipped. Use this to test t
 
 If a profile name is invalid, rollout fails fast and prints the available profile names.
 
-### Profile rollout matrix
-
+**Profile rollout matrix:**
 - `baseline`: rolls out baseline profile assets and `.prettierrc`
 - `ansible` (when included): additionally rolls out `.ansible-lint` and `.yamllint`
 
-### After the rollout
+After rollout, maintainers will review and merge the PRs in each target repo, then enable branch protection rules in each repo under **Settings → Branches** and require `check-branch-name` and `check-pr-title` status checks to pass before merging.
 
-Enable branch protection rules in each repo under **Settings → Branches** and require `check-branch-name` and `check-pr-title` status checks to pass before merging.
+---
+
+### Developer: Setting up pre-commit hooks in your repo
+
+After the rollout PR has been merged in your repo, follow these steps:
+
+#### Step 1: Understand what was added
+
+The rollout added these files to your repo:
+
+```
+your-repo/
+├── .github/workflows/
+│   ├── pre-commit-template.yml          # Template to customize
+│   ├── reusable-pre-commit.yml          # Shared CI workflow
+│   └── [other org workflows]
+├── pre-commit-profiles/                 # Pre-defined hook profiles
+│   ├── baseline.yaml                    # (always included)
+│   ├── python.yaml                      # (if your repo is Python)
+│   ├── node.yaml                        # (if your repo uses Node)
+│   ├── ruby.yaml                        # (if your repo uses Ruby)
+│   └── ansible.yaml                     # (if your repo uses Ansible)
+├── scripts/
+│   ├── bootstrap-hooks.sh               # Main setup script (do not edit)
+│   ├── commit-msg-check.sh              # Git hook helper
+│   └── pip-audit-warn.sh                # Python audit wrapper
+├── git-hook-config/
+│   ├── .prettierrc                      # Code formatter config
+│   ├── .ansible-lint                    # (ansible repos only)
+│   └── .yamllint                        # (ansible repos only)
+├── playbook-dev_setup.yml               # ⬅️ Choose ONE setup method
+├── bootstrap.sh                         # ⬅️ (Ansible or shell script)
+└── [other files...]
+```
+
+#### Step 2: Choose your setup method
+
+**Option A: Ansible (recommended if available)**
+```sh
+# 1. Open playbook-dev_setup.yml in your editor
+vim playbook-dev_setup.yml
+
+# 2. Customize the profiles list to match your repo
+#    Edit the var labeled "CUSTOMIZE THIS" at the top
+#    Examples:
+#      Python project:    profiles: [baseline, python]
+#      Node.js project:   profiles: [baseline, node]
+#      Ansible/IaC:       profiles: [baseline, ansible]
+
+# 3. Run the playbook
+ansible-playbook playbook-dev_setup.yml
+
+# 4. It will show a success message when done
+```
+
+**Option B: Shell script (if Ansible unavailable)**
+```sh
+# 1. Open bootstrap.sh in your editor
+vim bootstrap.sh
+
+# 2. Edit the PROFILES line at the top to match your repo
+#    Examples (same as Ansible):
+#      PROFILES="baseline python"
+#      PROFILES="baseline node"
+#      PROFILES="baseline ansible"
+
+# 3. Make it executable and run
+chmod +x bootstrap.sh
+./bootstrap.sh
+
+# 4. It will show a success message when done
+```
+
+#### Step 3: Verify setup
+
+After running either method, verify hooks are installed:
+
+```sh
+# Check that hooks run on commit
+git commit --allow-empty -m "test: verify hooks"
+# You should see: [INFO] Merging profiles..., [INFO] Installing hooks...
+
+# View installed hooks
+ls -la .git/hooks/
+
+# Manually run all checks to ensure they pass
+source .venv/bin/activate
+pre-commit run --all-files
+deactivate
+```
+
+#### Step 4: Update your CI workflow (if needed)
+
+If the rollout added `pre-commit-template.yml`, customize it for your repo:
+
+```sh
+# 1. Copy template to your workflows directory
+cp .github/workflows/pre-commit-template.yml .github/workflows/pre-commit.yml
+
+# 2. Edit the profiles list to match what you chose in Step 2
+#    Change this line:
+#    profiles: baseline  # TODO: replace with repo-specific list
+#    To match your profiles, e.g.:
+#    profiles: baseline,python
+
+# 3. Commit and push
+git add .github/workflows/pre-commit.yml
+git commit -m "chore: enable pre-commit CI checks"
+git push
+```
+
+#### Step 5: Commit your setup (one-time)
+
+After setup is complete, commit the generated `.pre-commit-config.yaml` and `.secrets.baseline`:
+
+```sh
+git add .pre-commit-config.yaml .secrets.baseline
+git commit -m "chore: initialize pre-commit hooks and secret baseline"
+git push
+```
+
+From now on, these hooks will run automatically on every:
+- `git commit` (pre-commit stage)
+- `git push` (pre-push stage)
+- `git commit -m "..."` (commit-msg validation)
+
+#### Troubleshooting
+
+**"Command not found: gitleaks"**
+```sh
+# Install gitleaks system-wide
+brew install gitleaks          # macOS
+apt install gitleaks           # Linux
+choco install gitleaks         # Windows
+```
+
+**"npm not found" (with node/baseline profile)**
+```sh
+brew install node              # macOS
+apt install nodejs             # Linux
+```
+
+**"gem install failed" (with ruby profile)**
+Ruby dev tools must be installed. On macOS, run:
+```sh
+xcode-select --install
+```
+
+**"pre-commit not found"**
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pre-commit
+deactivate
+# Then re-run the setup script
+```
+
+**Hooks aren't running**
+Check that `.git/hooks/pre-commit` exists and is executable:
+```sh
+ls -la .git/hooks/
+# Should see pre-commit, pre-push, commit-msg with 'x' permissions
+```
+
+**Need to update profiles later?**
+Simply customize `playbook-dev_setup.yml` or `bootstrap.sh` again and re-run. It will reinstall hooks with the new profile list.
 
 ---
 
