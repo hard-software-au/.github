@@ -1,11 +1,11 @@
 # Python pre-commit profile — applies to repos with Python code.
-# Includes: linting/formatting (ruff), type checking (mypy), dependency auditing (pip-audit).
+# Includes: linting (ruff), formatting (black), type checking (mypy), dependency auditing (pip-audit).
 # Venv dependencies: ruff, mypy, pip-audit.
 # Install: pip install ruff mypy pip-audit
 
 repos:
-  # Ruff — fast Python linter and formatter.
-  # Replaces: flake8, autopep8, isort, black.
+  # Ruff — fast Python linter.
+  # Replaces: flake8, autopep8, isort.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.5 # Latest stable (check https://github.com/astral-sh/ruff-pre-commit/releases)
     hooks:
@@ -13,9 +13,14 @@ repos:
         name: ruff (linter)
         args: [--fix]
         stages: [pre-commit]
-      - id: ruff-format
-        name: ruff (formatter)
-        stages: [pre-push]
+
+  # Black — Python code formatter.
+  - repo: https://github.com/psf/black
+    rev: 24.8.0 # Latest stable (check https://github.com/psf/black/releases)
+    hooks:
+      - id: black
+        name: black (formatter)
+        stages: [pre-commit]
 
   # Mypy — static type checking for Python.
   - repo: https://github.com/pre-commit/mirrors-mypy

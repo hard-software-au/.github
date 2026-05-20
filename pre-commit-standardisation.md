@@ -78,7 +78,8 @@ Stage 0 progress note (2026-05-19): **COMPLETE**. Prototype extracted, version p
   - Prettier (caller repos scope via `files:`)
   - Pins: pre-commit-hooks v6.0.0, prettier latest
 - [x] **`pre-commit-profiles/python.yaml`**
-  - `ruff` (lint + format, v0.5.5)
+  - `ruff` (lint, v0.5.5)
+  - `black` (format, v24.8.0)
   - `mypy` (type checking, v1.11.1)
   - `pip-audit` (advisory, non-blocking)
   - Applies to: `availability-api`, `generator-api`, `direct-plant-control-api`, `auto-bidder-engine`, `optigen-*`, `pyscada`, `pyqueueloader`, `xen-orchestra-audits`, `auth0-audits`, `infolite-core` (lib only)
