@@ -141,8 +141,8 @@ FAILED=()
 for REPO in ${(f)REPOS}; do
   REPO_NAME="${REPO##*/}"
 
-  # Skip the reference repo and the org-level .github repo
-  if [[ "$REPO_NAME" == "infolite-core" || "$REPO_NAME" == ".github" ]]; then
+  # Skip only the org-level .github repo
+  if [[ "$REPO_NAME" == ".github" ]]; then
     SKIPPED+=("$REPO_NAME")
     echo "⏭  $REPO_NAME — skipped (excluded)"
     continue
@@ -241,10 +241,21 @@ for REPO in ${(f)REPOS}; do
   git commit -m "$PR_TITLE"
 
   if ! git push origin "$PR_BRANCH" --quiet 2>/dev/null; then
-    echo "  ✗ push failed — skipping PR creation"
-    popd >/dev/null
-    FAILED+=("$REPO_NAME (push failed)")
-    continue
+    # Branch already exists on remote — close old PR/delete branch (if any), then retry a normal push
+    echo "  ⚠ branch already exists on remote — closing old PR/deleting branch, then retrying push"
+    OLD_PR=$(gh pr list --repo "hard-software-au/$REPO_NAME" \
+      --head "$PR_BRANCH" --json number --jq '.[0].number' 2>/dev/null || true)
+    if [[ -n "$OLD_PR" ]]; then
+      gh pr close "$OLD_PR" --repo "hard-software-au/$REPO_NAME" --delete-branch 2>/dev/null || true
+    else
+      git push origin --delete "$PR_BRANCH" --quiet 2>/dev/null || true
+    fi
+    if ! git push origin "$PR_BRANCH" --quiet 2>/dev/null; then
+      echo "  ✗ push failed after cleanup — skipping PR creation"
+      popd >/dev/null
+      FAILED+=("$REPO_NAME (push failed)")
+      continue
+    fi
   fi
 
   PR_URL=$(gh pr create \

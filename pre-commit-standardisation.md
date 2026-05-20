@@ -10,20 +10,34 @@ The prototype lives in `infrastructure/.pre-commit-config.yaml`. Everything else
 Follow this sequence to minimise churn and make rollback easy:
 
 1. Foundation in `.github` (this repo)
-  - Complete §0 (prototype extraction) and §1 (profile definitions)
-  - Complete §2 (bootstrap tooling) so profile assembly is automated and repeatable
-  - Complete §3 (reusable CI workflow) so enforcement is available before broad rollout
-2. Validate against `infrastructure` first (Priority 1)
-  - Use `baseline` + `ansible` profiles as the first production proving ground
-  - Confirm parity with existing `playbook-dev_setup.yml` behaviour and hook outcomes
-3. Roll out targeted pilot in `infolite-core` for `ansible/dc-24`
-  - Generate repo config from shared profiles, scoped to `ansible/dc-24/` only for initial adoption
-  - Install both local hooks: pre-commit and pre-push
-  - Run full hook suite and fix issues before enabling branch protection requirements
-4. Expand to remaining repos by §4 migration order
-  - Progress from priorities 2 → 5 after pilot stability
-5. Operationalise maintenance
-  - Complete §5 and §6 (versioning, exceptions, upgrade process)
+
+- Complete §0 (prototype extraction) and §1 (profile definitions)
+- Complete §2 (bootstrap tooling) so profile assembly is automated and repeatable
+- Complete §3 (reusable CI workflow) so enforcement is available before broad rollout
+
+2. Dogfood in `.github` (this repo) before any downstream rollout
+
+- Complete §3.1 (dogfooding checklist) and require green checks in `.github`
+- Merge a one-time cleanup PR for formatting/lint drift before enabling required checks org-wide
+
+3. Validate against `infrastructure` first (Priority 1)
+
+- Use `baseline` + `ansible` profiles as the first production proving ground
+- Confirm parity with existing `playbook-dev_setup.yml` behaviour and hook outcomes
+
+4. Roll out targeted pilot in `infolite-core` for `ansible/dc-24`
+
+- Generate repo config from shared profiles, scoped to `ansible/dc-24/` only for initial adoption
+- Install both local hooks: pre-commit and pre-push
+- Run full hook suite and fix issues before enabling branch protection requirements
+
+5. Expand to remaining repos by §4 migration order
+
+- Progress from priorities 2 → 5 after pilot stability
+
+6. Operationalise maintenance
+
+- Complete §5 and §6 (versioning, exceptions, upgrade process)
 
 **Gate rule:** do not onboard additional repos until the previous step is green in both local runs and CI.
 
@@ -64,7 +78,8 @@ Stage 0 progress note (2026-05-19): **COMPLETE**. Prototype extracted, version p
   - Prettier (caller repos scope via `files:`)
   - Pins: pre-commit-hooks v6.0.0, prettier latest
 - [x] **`pre-commit-profiles/python.yaml`**
-  - `ruff` (lint + format, v0.5.5)
+  - `ruff` (lint, v0.5.5)
+  - `black` (format, v24.8.0)
   - `mypy` (type checking, v1.11.1)
   - `pip-audit` (advisory, non-blocking)
   - Applies to: `availability-api`, `generator-api`, `direct-plant-control-api`, `auto-bidder-engine`, `optigen-*`, `pyscada`, `pyqueueloader`, `xen-orchestra-audits`, `auth0-audits`, `infolite-core` (lib only)
@@ -89,6 +104,7 @@ Stage 1.1 complete (2026-05-19): All 5 profiles created with repo-agnostic scopi
 ## 2. Create bootstrap tooling
 
 Current behavior snapshot (as of 2026-05-19):
+
 - `bootstrap-hooks.sh` installs hook types: `pre-commit`, `pre-push`, `commit-msg`
 - Prefers venv-local tools when available (`.venv/bin/pre-commit`, `.venv/bin/detect-secrets`)
 - Generates `.secrets.baseline` (warn-only fallback when detect-secrets missing)
@@ -117,6 +133,7 @@ Stage 1.2 progress note (2026-05-19): **COMPLETE**. Bootstrap tooling (scripts/b
 ## 3. Create reusable CI workflow
 
 Current behavior snapshot (as of 2026-05-19):
+
 - CI installs both `pre-commit` and `detect-secrets`
 - Pre-commit pass/fail is based on command exit code (`pipefail`), not log grepping
 - Workflow remains profile-driven via `workflow_call` input `profiles`
@@ -137,6 +154,17 @@ Current behavior snapshot (as of 2026-05-19):
 
 Stage 3 complete (2026-05-19): Reusable CI workflow + template created. Profile merging, hook execution, and result reporting automated.
 
+### 3.1 Dogfood pre-commits in `.github` (required)
+
+- [x] Generate `.pre-commit-config.yaml` in `.github` from `baseline` profile only (no ansible/python/node/ruby for this repo unless explicitly needed)
+- [x] Install local hooks in `.github`: `pre-commit`, `pre-push`, `commit-msg`
+- [x] Create/refresh `.secrets.baseline` in `.github` and commit it
+- [x] Run one-time full sweep in `.github`: `pre-commit run --all-files`; commit all required formatting/lint fixes
+- [ ] Confirm reusable CI workflow is green on `.github` PRs using changed-files mode
+- [ ] Enforce branch protection in `.github`: pre-commit check must pass before merge
+- [ ] Gate: do not run `.github/rollout-devops-assets.sh` against any downstream repo until all items above are complete and merged to default branch
+- [ ] Add the files created in this stage to a .gitignore so they don't get deployed to an app server
+
 ---
 
 ## 4. Wire up each repo
@@ -154,23 +182,23 @@ For each repo below, complete all steps:
 
 ### Migration order
 
-| Priority | Repo | Profiles |
-|---|---|---|
-| 1 | `infrastructure` | baseline, ansible |
-| 2 | `availability-api` | baseline, python |
-| 2 | `generator-api` | baseline, python |
-| 2 | `direct-plant-control-api` | baseline, python |
-| 3 | `infolite-core` | baseline, python, ruby, ansible |
-| 4 | `infolite-web-app` | baseline, node |
-| 5 | `auto-bidder-engine` | baseline, python |
-| 5 | `optigen-monitor` | baseline, python |
-| 5 | `optigen-rut-reader` | baseline, python |
-| 5 | `optigen-MQTT-dashboard` | baseline, python |
-| 5 | `optigen-web-app` | baseline, node |
-| 5 | `pyscada` | baseline, python |
-| 5 | `pyqueueloader` | baseline, python |
-| 5 | `xen-orchestra-audits` | baseline, python |
-| 5 | `auth0-audits` | baseline, python |
+| Priority | Repo                       | Profiles                        |
+| -------- | -------------------------- | ------------------------------- |
+| 1        | `infrastructure`           | baseline, ansible               |
+| 2        | `availability-api`         | baseline, python                |
+| 2        | `generator-api`            | baseline, python                |
+| 2        | `direct-plant-control-api` | baseline, python                |
+| 3        | `infolite-core`            | baseline, python, ruby, ansible |
+| 4        | `infolite-web-app`         | baseline, node                  |
+| 5        | `auto-bidder-engine`       | baseline, python                |
+| 5        | `optigen-monitor`          | baseline, python                |
+| 5        | `optigen-rut-reader`       | baseline, python                |
+| 5        | `optigen-MQTT-dashboard`   | baseline, python                |
+| 5        | `optigen-web-app`          | baseline, node                  |
+| 5        | `pyscada`                  | baseline, python                |
+| 5        | `pyqueueloader`            | baseline, python                |
+| 5        | `xen-orchestra-audits`     | baseline, python                |
+| 5        | `auth0-audits`             | baseline, python                |
 
 ### Initial pilot scope note
 

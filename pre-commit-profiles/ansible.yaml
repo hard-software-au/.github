@@ -6,7 +6,7 @@
 repos:
   # Ansible-lint — Ansible playbook linter.
   - repo: https://github.com/ansible/ansible-lint.git
-    rev: v6.28.3  # Latest stable (check https://github.com/ansible/ansible-lint/releases)
+    rev: v6.28.3 # Latest stable (check https://github.com/ansible/ansible-lint/releases)
     hooks:
       - id: ansible-lint
         name: ansible-lint
@@ -16,7 +16,7 @@ repos:
 
   # Yamllint — YAML file linter.
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.35.1  # Latest stable (check https://github.com/adrienverge/yamllint/releases)
+    rev: v1.35.1 # Latest stable (check https://github.com/adrienverge/yamllint/releases)
     hooks:
       - id: yamllint
         name: yamllint

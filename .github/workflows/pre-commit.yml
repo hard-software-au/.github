@@ -1,5 +1,14 @@
 name: Pre-commit Hooks
 
+# Source of truth: `workflows/pre-commit-template.yml`.
+# This file exists in `.github/workflows/` because GitHub Actions only executes workflows from this path(.github/.github/workflows/).
+#
+# Redeploy process:
+# 1) Make changes in the source file above (and in `workflows/reusable-pre-commit.yml` if needed).
+# 2) Commit and merge in the `.github` repo.
+# 3) Roll out to target repos with `./rollout-devops-assets.sh --repo <repo> --profiles <profiles>`.
+#    (The `.github` repo itself is updated directly via normal PRs.)
+
 # NOTE:
 # - This template requires `.github/workflows/reusable-pre-commit.yml` in the target repo.
 # - Replace `profiles` with the exact profile set for this repository before merging.
