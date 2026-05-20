@@ -14,7 +14,6 @@ name: Pre-commit Hooks
 # - Replace `profiles` with the exact profile set for this repository before merging.
 
 on:
-  pull_request:
   push:
 
 jobs:
