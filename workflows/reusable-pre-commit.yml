@@ -43,6 +43,8 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
+          cache-dependency-path: |
+            .github-org/pre-commit-profiles/*.yaml
 
       - name: Install gitleaks (system prerequisite)
         run: |
