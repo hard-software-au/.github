@@ -112,9 +112,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.profiles }}-${{ hashFiles('.pre-commit-config.ci.yaml') }}
+          key: pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ replace(inputs.profiles, ' ', '') }}-${{ hashFiles('.pre-commit-config.ci.yaml') }}
           restore-keys: |
-            pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ inputs.profiles }}-
+            pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ replace(inputs.profiles, ' ', '') }}-
             pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-
 
       - name: Install pre-commit and profile dependencies
