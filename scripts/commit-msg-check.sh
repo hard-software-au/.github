@@ -1,7 +1,9 @@
 #!/bin/bash
 # commit-msg-check.sh
 # Validates commit message format against convention:
-#   - First line: < 50 chars, capitalized, imperative mood (not ending in period)
+#   - First line: Conventional Commits subject (< 50 chars)
+#     format: <type>(<optional-scope>)!: <description>
+#     example: feat(auth): add SSO callback handling
 #   - Blank line after first line (if body present)
 #   - Body lines: < 72 chars
 #
@@ -42,10 +44,13 @@ if [[ -z "$FIRST_LINE" ]]; then
     exit 1
 fi
 
-# Check 3: First letter must be capitalized
-FIRST_CHAR="${FIRST_LINE:0:1}"
-if [[ ! "$FIRST_CHAR" =~ ^[A-Z]$ ]]; then
-    echo "ERROR: first letter must be capitalized"
+# Check 3: Conventional Commits subject format
+CONVENTIONAL_PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9._/-]+\))?(!)?: .+'
+if [[ ! "$FIRST_LINE" =~ $CONVENTIONAL_PATTERN ]]; then
+    echo "ERROR: commit subject must follow Conventional Commits format"
+    echo "  Required: <type>(<optional-scope>)!: <description>"
+    echo "  Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    echo "  Example: feat(auth): add SSO callback handling"
     echo "  $FIRST_LINE"
     exit 1
 fi
