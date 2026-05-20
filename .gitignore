@@ -1,1 +1,3 @@
 .venv/
+.pre-commit-config.ci.yaml
+pre-commit.log

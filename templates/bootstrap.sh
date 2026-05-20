@@ -1,6 +1,9 @@
 #!/bin/bash
 # Bootstrap pre-commit hooks setup (template)
 #
+# This is the only supported local setup method distributed by org rollout.
+# (The old playbook-based setup has been retired.)
+#
 # Copy this to your repo root as bootstrap.sh and customize the PROFILES variable.
 # Then commit it and document the setup command in your README.md:
 #
