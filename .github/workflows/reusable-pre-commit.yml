@@ -117,13 +117,21 @@ jobs:
           echo "Normalized $CONFIG_FILE:"
           cat "$CONFIG_FILE"
 
+      - name: Compute normalized profile key
+        id: profile-key
+        env:
+          PROFILES: ${{ inputs.profiles }}
+        run: |
+          NORMALIZED_PROFILES="${PROFILES// /}"
+          echo "normalized_profiles=$NORMALIZED_PROFILES" >> "$GITHUB_OUTPUT"
+
       - name: Restore pre-commit hook cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ replace(inputs.profiles, ' ', '') }}-${{ hashFiles('.pre-commit-config.ci.yaml') }}
+          key: pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ steps.profile-key.outputs.normalized_profiles }}-${{ hashFiles('.pre-commit-config.ci.yaml') }}
           restore-keys: |
-            pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ replace(inputs.profiles, ' ', '') }}-
+            pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-${{ steps.profile-key.outputs.normalized_profiles }}-
             pre-commit-${{ runner.os }}-py${{ inputs.python-version }}-
 
       - name: Install pre-commit and profile dependencies
