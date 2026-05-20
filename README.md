@@ -83,7 +83,7 @@ Developer prerequisite for hook rollout: `gitleaks` must be installed system-wid
 - **Linux (apt):** `apt install gitleaks`
 - **Windows (chocolatey):** `choco install gitleaks`
 
-Alternatively, run the bootstrap playbook in your target repo (e.g. `infrastructure/ubuntu24/playbook-dev_setup.yml`) which installs `gitleaks` automatically as part of full dev-environment setup.
+Alternatively, run `./bootstrap.sh` in your target repo, which guides local hook setup and dependency checks.
 
 The script automatically rolls out:
 
@@ -111,7 +111,7 @@ Use `rollout-devops-assets.sh` to deploy workflows, profiles, and bootstrap scri
 - GitHub Actions workflows (`.github/workflows/`)
 - Pre-commit hook profiles (`pre-commit-profiles/*.yaml`)
 - Helper scripts (`scripts/bootstrap-hooks.sh`, etc.)
-- Setup templates (`playbook-dev_setup.yml` and `bootstrap.sh`) — copy to repo root
+- Setup template (`bootstrap.sh`) — copy to repo root
 - Tool config files (`.prettierrc`, `.ansible-lint`, `.yamllint`)
 - Reusable workflow that runs hooks in CI (`reusable-pre-commit.yml`)
 
@@ -215,33 +215,11 @@ your-repo/
 │   ├── .prettierrc                      # Code formatter config
 │   ├── .ansible-lint                    # (ansible repos only)
 │   └── .yamllint                        # (ansible repos only)
-├── playbook-dev_setup.yml               # ⬅️ Choose ONE setup method
-├── bootstrap.sh                         # ⬅️ (Ansible or shell script)
+├── bootstrap.sh                         # ⬅️ Local setup entrypoint
 └── [other files...]
 ```
 
-#### Step 2: Choose your setup method
-
-**Option A: Ansible (recommended if available)**
-
-```sh
-# 1. Open playbook-dev_setup.yml in your editor
-vim playbook-dev_setup.yml
-
-# 2. Customize the profiles list to match your repo
-#    Edit the var labeled "CUSTOMIZE THIS" at the top
-#    Examples:
-#      Python project:    profiles: [baseline, python]
-#      Node.js project:   profiles: [baseline, node]
-#      Ansible/IaC:       profiles: [baseline, ansible]
-
-# 3. Run the playbook
-ansible-playbook playbook-dev_setup.yml
-
-# 4. It will show a success message when done
-```
-
-**Option B: Shell script (if Ansible unavailable)**
+#### Step 2: Run bootstrap.sh
 
 ```sh
 # 1. Open bootstrap.sh in your editor
@@ -358,7 +336,7 @@ ls -la .git/hooks/
 ```
 
 **Need to update profiles later?**
-Simply customize `playbook-dev_setup.yml` or `bootstrap.sh` again and re-run. It will reinstall hooks with the new profile list.
+Simply customize `bootstrap.sh` again and re-run. It will reinstall hooks with the new profile list.
 
 ---
 
