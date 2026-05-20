@@ -7,18 +7,18 @@ This directory contains shared GitHub Actions workflows for org-wide standardiza
 A reusable GitHub Actions workflow that orchestrates pre-commit hook checks for any repository. This workflow:
 
 1. **Checks out the calling repo** to validate
-2. **Fetches org profiles** from the `.github` repo 
+2. **Fetches org profiles** from the `.github` repo
 3. **Generates `.pre-commit-config.yaml`** by merging selected profiles
 4. **Runs pre-commit checks** against all files with `pre-commit run --all-files`
 5. **Reports results** and fails the workflow if any check fails
 
 ### Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `profiles` | Yes | — | Comma-separated list of profiles: `baseline`, `python`, `node`, `ruby`, `ansible` |
-| `python-version` | No | `3.11` | Python version for venv |
-| `node-version` | No | `20` | Node.js version (if `node` profile used) |
+| Input            | Required | Default | Description                                                                       |
+| ---------------- | -------- | ------- | --------------------------------------------------------------------------------- |
+| `profiles`       | Yes      | —       | Comma-separated list of profiles: `baseline`, `python`, `node`, `ruby`, `ansible` |
+| `python-version` | No       | `3.11`  | Python version for venv                                                           |
+| `node-version`   | No       | `20`    | Node.js version (if `node` profile used)                                          |
 
 ### Usage
 
@@ -38,22 +38,22 @@ jobs:
     uses: ./.github/workflows/reusable-pre-commit.yml
     with:
       profiles: baseline,python
-      python-version: '3.11'
+      python-version: "3.11"
 ```
 
 ### Profile Combinations
 
 Choose profiles based on your repo's tech stack:
 
-| Tech Stack | Profiles |
-|---|---|
-| **Python (CLI/backend)** | `baseline,python` |
-| **Python (with pip audits)** | `baseline,python` |
-| **Node.js (frontend/backend)** | `baseline,node` |
-| **Ruby on Rails** | `baseline,python,ruby` |
-| **Ansible / Infrastructure** | `baseline,ansible` |
-| **Multi-language (Rails + shell)** | `baseline,python,ruby` |
-| **All languages** | `baseline,python,node,ruby,ansible` |
+| Tech Stack                         | Profiles                            |
+| ---------------------------------- | ----------------------------------- |
+| **Python (CLI/backend)**           | `baseline,python`                   |
+| **Python (with pip audits)**       | `baseline,python`                   |
+| **Node.js (frontend/backend)**     | `baseline,node`                     |
+| **Ruby on Rails**                  | `baseline,python,ruby`              |
+| **Ansible / Infrastructure**       | `baseline,ansible`                  |
+| **Multi-language (Rails + shell)** | `baseline,python,ruby`              |
+| **All languages**                  | `baseline,python,node,ruby,ansible` |
 
 ### What Happens
 
@@ -92,18 +92,22 @@ Set up branch protection to **require** this workflow to pass:
 ### Troubleshooting
 
 **Workflow fails with "profile not found":**
+
 - Verify profile name is spelled correctly (e.g., `node` not `nodejs`)
 - Available profiles: `baseline`, `python`, `node`, `ruby`, `ansible`
 
 **Workflow fails on `gitleaks` installation:**
+
 - Ensure gitleaks is installed on your machine: `brew install gitleaks` (macOS) or `apt install gitleaks` (Linux)
 - Workflow auto-installs on CI runner
 
 **Template workflow fails in target repo:**
+
 - Ensure `.github/workflows/reusable-pre-commit.yml` exists in the same repo
 - Update `profiles:` in `pre-commit-template.yml` to match the repo stack before merging
 
 **Workflow fails with profile mismatch:**
+
 - Check the `profiles:` value in workflow call
 - Available profiles: `baseline`, `python`, `node`, `ruby`, `ansible`
 
@@ -125,6 +129,7 @@ pre-commit run --all-files --show-diff-on-failure
 ## `pre-commit-template.yml`
 
 A template workflow that repos can copy/customize. Includes:
+
 - Trigger on pull requests and pushes to main/master
 - Calls `reusable-pre-commit.yml` with profile list
 - Shows examples of profile combinations
@@ -139,16 +144,19 @@ A template workflow that repos can copy/customize. Includes:
 ### Example Customizations
 
 **Python project:**
+
 ```yaml
 profiles: baseline,python
 ```
 
 **Rails project (Python + Ruby):**
+
 ```yaml
 profiles: baseline,python,ruby
 ```
 
 **Node.js + some Python:**
+
 ```yaml
 profiles: baseline,node,python
 ```

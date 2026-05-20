@@ -4,19 +4,19 @@ on:
   workflow_call:
     inputs:
       profiles:
-        description: 'Comma-separated list of profiles to run (baseline,python,node,ruby,ansible)'
+        description: "Comma-separated list of profiles to run (baseline,python,node,ruby,ansible)"
         required: true
         type: string
       python-version:
-        description: 'Python version for venv (default: 3.11)'
+        description: "Python version for venv (default: 3.11)"
         required: false
         type: string
-        default: '3.11'
+        default: "3.11"
       node-version:
-        description: 'Node.js version for prerequisites (if needed)'
+        description: "Node.js version for prerequisites (if needed)"
         required: false
         type: string
-        default: '20'
+        default: "20"
 
 jobs:
   pre-commit:
@@ -27,7 +27,7 @@ jobs:
       - name: Checkout calling repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for better diff detection
+          fetch-depth: 0 # Full history for better diff detection
 
       - name: Checkout .github repository (org standards)
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ inputs.python-version }}
-          cache: 'pip'
+          cache: "pip"
 
       - name: Install gitleaks (system prerequisite)
         run: |
@@ -58,11 +58,11 @@ jobs:
       - name: Generate .pre-commit-config.yaml from profiles
         env:
           PROFILES: ${{ inputs.profiles }}
-          GITHUB_ORG_DIR: '.github-org'
+          GITHUB_ORG_DIR: ".github-org"
         run: |
           # Parse profile list
           IFS=',' read -ra PROFILE_LIST <<< "$PROFILES"
-          
+
           # Create output file with header
           cat > .pre-commit-config.yaml << 'EOF'
           # ============================================================================
@@ -70,11 +70,11 @@ jobs:
           # Profiles: ${{ inputs.profiles }}
           # DO NOT EDIT DIRECTLY
           # ============================================================================
-          
+
           fail_fast: false
           repos:
           EOF
-          
+
           # Append each profile's repos section
           for profile in "${PROFILE_LIST[@]}"; do
             profile="${profile// /}"  # trim whitespace
@@ -92,7 +92,7 @@ jobs:
             awk '/^  - repo:/ { in_repos=1 } in_repos { print }' "$PROFILE_FILE" >> .pre-commit-config.yaml
             echo "" >> .pre-commit-config.yaml
           done
-          
+
           echo "Generated .pre-commit-config.yaml:"
           cat .pre-commit-config.yaml
 
@@ -108,7 +108,7 @@ jobs:
       - name: Install pre-commit and profile dependencies
         env:
           PROFILES: ${{ inputs.profiles }}
-          GITHUB_ORG_DIR: '.github-org'
+          GITHUB_ORG_DIR: ".github-org"
         run: |
           set -euo pipefail
 

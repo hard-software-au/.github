@@ -7,7 +7,7 @@ repos:
   # Ruff — fast Python linter and formatter.
   # Replaces: flake8, autopep8, isort, black.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.5  # Latest stable (check https://github.com/astral-sh/ruff-pre-commit/releases)
+    rev: v0.5.5 # Latest stable (check https://github.com/astral-sh/ruff-pre-commit/releases)
     hooks:
       - id: ruff
         name: ruff (linter)
@@ -19,11 +19,11 @@ repos:
 
   # Mypy — static type checking for Python.
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.1  # Latest stable (check https://github.com/python/mypy/releases)
+    rev: v1.11.1 # Latest stable (check https://github.com/python/mypy/releases)
     hooks:
       - id: mypy
         name: mypy (type checking)
-        additional_dependencies: []  # Repo specifies type stubs via setup.cfg or pyproject.toml
+        additional_dependencies: [] # Repo specifies type stubs via setup.cfg or pyproject.toml
         stages: [pre-push]
 
   # Pip-audit — advisory only (non-blocking).

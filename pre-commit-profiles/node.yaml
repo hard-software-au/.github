@@ -7,7 +7,7 @@
 repos:
   # ESLint — JavaScript/TypeScript linter and fixer.
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.9.0  # Latest stable (check https://github.com/eslint/eslint/releases)
+    rev: v9.9.0 # Latest stable (check https://github.com/eslint/eslint/releases)
     hooks:
       - id: eslint
         name: eslint (linter)

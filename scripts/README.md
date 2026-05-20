@@ -7,6 +7,7 @@ This directory contains the bootstrap tooling and helper scripts for pre-commit 
 ### `bootstrap-hooks.sh`
 
 Automated setup script that:
+
 1. Fetches profiles from `.github/pre-commit-profiles/`
 2. Merges profiles into a single `.pre-commit-config.yaml`
 3. Extracts tool dependencies from profiles
@@ -62,6 +63,7 @@ pre-commit autoupdate  # Optional: update hook revisions to latest
 ### `commit-msg-check.sh`
 
 Enforces commit message conventions across all repos. Validates:
+
 - **First line:** < 50 chars, capitalized, imperative mood
 - **Blank line:** Required after first line if body present
 - **Body lines:** < 72 chars (recommended)
@@ -101,6 +103,7 @@ additional details here without blank line  # Missing blank line
 Runs `pip-audit` in advisory mode and always exits `0` so dependency advisories are visible without blocking pushes.
 
 Behavior:
+
 - Uses `.venv/bin/pip-audit` when available
 - Falls back to system `pip-audit` if installed
 - Warns and skips when `pip-audit` is unavailable
@@ -108,6 +111,7 @@ Behavior:
 ## Integration with rollout-devops-assets.sh
 
 The `.github/rollout-devops-assets.sh` script automatically deploys **all** `.sh` files from this directory to target repos:
+
 - `.github/scripts/*.sh` → `scripts/*.sh` in target repo
 - `.github/pre-commit-profiles/*.yaml` → `pre-commit-profiles/` in target repo
 - `.github/workflows/*.yml` → `.github/workflows/` in target repo

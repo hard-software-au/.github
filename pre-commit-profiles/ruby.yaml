@@ -6,7 +6,7 @@
 repos:
   # Rubocop — Ruby linter and formatter.
   - repo: https://github.com/rubocop/rubocop-precommit
-    rev: v1.3.1  # Latest stable (check https://github.com/rubocop/rubocop-precommit/releases)
+    rev: v1.3.1 # Latest stable (check https://github.com/rubocop/rubocop-precommit/releases)
     hooks:
       - id: rubocop
         name: rubocop (linter/formatter)

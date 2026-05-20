@@ -74,7 +74,7 @@ hosted on GHCR. Expected job time: ~5 min → ~45–90 sec cold, ~20–30 sec wa
 ## 7. Integrate container build into `rollout-devops-assets.sh`
 
 - [ ] Add `docker/pre-commit-runner/Dockerfile` to the list of assets deployed to target repos
-  (so repos get a local copy for reference, or decide to exclude and keep it `.github`-only)
+      (so repos get a local copy for reference, or decide to exclude and keep it `.github`-only)
 - [ ] Ensure `workflows/build-pre-commit-runner.yml` is included in the workflows deployed by the rollout script
 - [ ] Verify the rollout script's `git add` and `git diff --quiet` checks cover the new `docker/` directory
 - [ ] Test with `--dry-run` against one repo before a full org rollout:
@@ -88,16 +88,16 @@ hosted on GHCR. Expected job time: ~5 min → ~45–90 sec cold, ~20–30 sec wa
 
 - [ ] No changes to target repo workflows — they call `reusable-pre-commit.yml` which is updated centrally ✓
 - [ ] Re-run `rollout-devops-assets.sh` for any repos that need the updated `reusable-pre-commit.yml`
-  pushed to their `.github/workflows/` directory
+      pushed to their `.github/workflows/` directory
 
 ---
 
 ## Reference
 
-| Profile   | Key pip packages                              | Key gem packages        | System |
-|-----------|-----------------------------------------------|-------------------------|--------|
-| baseline  | `pre-commit`, `detect-secrets`                | —                       | `gitleaks` |
-| python    | `ruff`, `mypy`, `pip-audit`                   | —                       | — |
-| node      | —                                             | —                       | `node` (LTS) |
-| ruby      | —                                             | `rubocop`, `rubocop-rails` | — |
-| ansible   | `ansible`, `ansible-lint`, `yamllint`, `checkov` | —                    | — |
+| Profile  | Key pip packages                                 | Key gem packages           | System       |
+| -------- | ------------------------------------------------ | -------------------------- | ------------ |
+| baseline | `pre-commit`, `detect-secrets`                   | —                          | `gitleaks`   |
+| python   | `ruff`, `mypy`, `pip-audit`                      | —                          | —            |
+| node     | —                                                | —                          | `node` (LTS) |
+| ruby     | —                                                | `rubocop`, `rubocop-rails` | —            |
+| ansible  | `ansible`, `ansible-lint`, `yamllint`, `checkov` | —                          | —            |

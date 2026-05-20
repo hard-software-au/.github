@@ -14,13 +14,13 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required to push tags
+      contents: write # Required to push tags
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history and tags
+          fetch-depth: 0 # Fetch all history and tags
 
       - name: Get latest tag and auto-increment
         id: tagger

@@ -5,9 +5,11 @@ This repository contains default community health files and templates that apply
 ## Contents
 
 ### `PULL_REQUEST_TEMPLATE.md`
+
 The default PR description template. It is automatically pre-filled when a new pull request is opened in any repo in the organisation.
 
 It prompts for:
+
 - **Description** — key changes, refactoring, or bug fixes
 - **References** — Jira tickets or related issues
 - **Screenshots** — before/after visuals where relevant
@@ -20,33 +22,44 @@ It prompts for:
 Individual repos should also include the following GitHub Actions workflows. See `infolite-core` for reference implementations:
 
 ### Branch naming — `branch-name-check.yml`
+
 Validates that branch names follow the format:
+
 ```
 {name}/{intent}/{optional-JIRA-123-}summary
 ```
+
 Examples:
+
 - `rahmat/feat/HS-121-add-planned-outages`
 - `john/spike/experiment-with-metrics`
 
 ### PR title — `pr-title-check.yml`
+
 Validates that PR titles follow the format:
+
 ```
 {intent}: [{JIRA-123}] summary          # with Jira ticket
 {intent}: summary                        # without Jira ticket
 ```
+
 Examples:
+
 - `chore: [HS-169] remove local timezone and show AEMO timezone`
 - `feat: add planned outages`
 
 Valid intents: `feat` | `fix` | `chore` | `refactor` | `docs` | `spike`
 
 ### Auto-tagging — `auto-tag.yml`
+
 Automatically creates a git tag on merges to the default branch based on the PR title intent:
+
 - `feat` → bumps minor version
 - `fix` → bumps patch version
 - `chore` / `refactor` / `docs` / `spike` → no tag
 
 ### PR description bootstrap (first push only) — `pr-description-first-push.yml`
+
 Auto-populates the PR description once when a PR is opened.
 
 - Trigger: `pull_request` with `types: [opened]`
@@ -65,6 +78,7 @@ Do not manually copy workflow files, profile files, or bootstrap hook scripts be
 Developer prerequisite for hook rollout: `gitleaks` must be installed system-wide on contributor machines because it is configured as a system-language hook (not installed via repo venv).
 
 **Installation:**
+
 - **macOS:** `brew install gitleaks`
 - **Linux (apt):** `apt install gitleaks`
 - **Windows (chocolatey):** `choco install gitleaks`
@@ -72,6 +86,7 @@ Developer prerequisite for hook rollout: `gitleaks` must be installed system-wid
 Alternatively, run the bootstrap playbook in your target repo (e.g. `infrastructure/ubuntu24/playbook-dev_setup.yml`) which installs `gitleaks` automatically as part of full dev-environment setup.
 
 The script automatically rolls out:
+
 - All current and future workflow templates found in the source workflow template directory
 - Shared git-hook assets when present (selected `pre-commit-profiles/*.yaml` and all `scripts/*.sh`)
 - Tool config files based on selected profiles (`git-hook-config/.prettierrc` always; `git-hook-config/.ansible-lint` and `git-hook-config/.yamllint` when `ansible` is selected)
@@ -92,20 +107,23 @@ This section covers the complete deployment flow from two perspectives:
 Use `rollout-devops-assets.sh` to deploy workflows, profiles, and bootstrap scripts to all org repos at once.
 
 **What gets deployed:**
+
 - GitHub Actions workflows (`.github/workflows/`)
 - Pre-commit hook profiles (`pre-commit-profiles/*.yaml`)
 - Helper scripts (`scripts/bootstrap-hooks.sh`, etc.)
-- Setup templates (`playbook-dev_setup.yml` and `bootstrap.sh`) — copy to repo root  
+- Setup templates (`playbook-dev_setup.yml` and `bootstrap.sh`) — copy to repo root
 - Tool config files (`.prettierrc`, `.ansible-lint`, `.yamllint`)
 - Reusable workflow that runs hooks in CI (`reusable-pre-commit.yml`)
 
 **Prerequisites:**
+
 - [`gh` CLI](https://cli.github.com/) installed and authenticated: `brew install gh` then `gh auth login`
 - Run from the root of this repo (so the script can find the workflow source files alongside it)
 
 **One-time setup (org maintainer only):**
 
 1. Install prerequisites:
+
    ```sh
    brew install gh
    gh auth login
@@ -123,7 +141,7 @@ Use `rollout-devops-assets.sh` to deploy workflows, profiles, and bootstrap scri
 ./rollout-devops-assets.sh --dry-run
 ```
 
-Clones every repo and checks which ones are missing shared workflows/hooks. Prints a list of repos that *would* get a PR opened — no git push, no PRs created. Default profiles: if `--profiles` is not provided, the script uses `baseline`.
+Clones every repo and checks which ones are missing shared workflows/hooks. Prints a list of repos that _would_ get a PR opened — no git push, no PRs created. Default profiles: if `--profiles` is not provided, the script uses `baseline`.
 
 **Deploy to all repos:**
 
@@ -132,6 +150,7 @@ Clones every repo and checks which ones are missing shared workflows/hooks. Prin
 ```
 
 For each repo that is missing any managed workflow/hook asset, the script:
+
 1. Clones the repo (shallow)
 2. Creates branch `bot/chore/rollout-org-automation-standards`
 3. Copies managed workflow templates into `.github/workflows/`
@@ -160,6 +179,7 @@ Only that repo is processed; all others are silently skipped. Use this to test t
 If a profile name is invalid, rollout fails fast and prints the available profile names.
 
 **Profile rollout matrix:**
+
 - `baseline`: rolls out baseline profile assets and `.prettierrc`
 - `ansible` (when included): additionally rolls out `.ansible-lint` and `.yamllint`
 
@@ -203,6 +223,7 @@ your-repo/
 #### Step 2: Choose your setup method
 
 **Option A: Ansible (recommended if available)**
+
 ```sh
 # 1. Open playbook-dev_setup.yml in your editor
 vim playbook-dev_setup.yml
@@ -221,6 +242,7 @@ ansible-playbook playbook-dev_setup.yml
 ```
 
 **Option B: Shell script (if Ansible unavailable)**
+
 ```sh
 # 1. Open bootstrap.sh in your editor
 vim bootstrap.sh
@@ -287,6 +309,7 @@ git push
 ```
 
 From now on, these hooks will run automatically on every:
+
 - `git commit` (pre-commit stage)
 - `git push` (pre-push stage)
 - `git commit -m "..."` (commit-msg validation)
@@ -294,6 +317,7 @@ From now on, these hooks will run automatically on every:
 #### Troubleshooting
 
 **"Command not found: gitleaks"**
+
 ```sh
 # Install gitleaks system-wide
 brew install gitleaks          # macOS
@@ -302,6 +326,7 @@ choco install gitleaks         # Windows
 ```
 
 **"npm not found" (with node/baseline profile)**
+
 ```sh
 brew install node              # macOS
 apt install nodejs             # Linux
@@ -309,11 +334,13 @@ apt install nodejs             # Linux
 
 **"gem install failed" (with ruby profile)**
 Ruby dev tools must be installed. On macOS, run:
+
 ```sh
 xcode-select --install
 ```
 
 **"pre-commit not found"**
+
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
@@ -324,6 +351,7 @@ deactivate
 
 **Hooks aren't running**
 Check that `.git/hooks/pre-commit` exists and is executable:
+
 ```sh
 ls -la .git/hooks/
 # Should see pre-commit, pre-push, commit-msg with 'x' permissions
@@ -341,51 +369,51 @@ Use these names with `--repo` to target a specific repo.
 
 > Always excluded by the script: `.github`, `infolite-core`
 
-| Repo name | `--repo` value |
-|---|---|
-| hard-software-au/alerts-caller | `alerts-caller` |
-| hard-software-au/alerts-dashboard | `alerts-dashboard` |
-| hard-software-au/assets | `assets` |
-| hard-software-au/auth0-audits | `auth0-audits` |
-| hard-software-au/auto-bidder-engine | `auto-bidder-engine` |
-| hard-software-au/availability-api | `availability-api` |
-| hard-software-au/deployment-dashboard | `deployment-dashboard` |
-| hard-software-au/direct-plant-control-api | `direct-plant-control-api` |
-| hard-software-au/fast-api-test | `fast-api-test` |
-| hard-software-au/fcas | `fcas` |
-| hard-software-au/gendirector-api | `gendirector-api` |
+| Repo name                                     | `--repo` value                 |
+| --------------------------------------------- | ------------------------------ |
+| hard-software-au/alerts-caller                | `alerts-caller`                |
+| hard-software-au/alerts-dashboard             | `alerts-dashboard`             |
+| hard-software-au/assets                       | `assets`                       |
+| hard-software-au/auth0-audits                 | `auth0-audits`                 |
+| hard-software-au/auto-bidder-engine           | `auto-bidder-engine`           |
+| hard-software-au/availability-api             | `availability-api`             |
+| hard-software-au/deployment-dashboard         | `deployment-dashboard`         |
+| hard-software-au/direct-plant-control-api     | `direct-plant-control-api`     |
+| hard-software-au/fast-api-test                | `fast-api-test`                |
+| hard-software-au/fcas                         | `fcas`                         |
+| hard-software-au/gendirector-api              | `gendirector-api`              |
 | hard-software-au/generation-management-system | `generation-management-system` |
-| hard-software-au/generator-api | `generator-api` |
-| hard-software-au/generator-api-client-spec | `generator-api-client-spec` |
-| hard-software-au/gpg_auto-bidder-engine | `gpg_auto-bidder-engine` |
-| hard-software-au/gpg_generator-api | `gpg_generator-api` |
-| hard-software-au/hpr | `hpr` |
-| hard-software-au/hpr-app | `hpr-app` |
-| hard-software-au/hs_bidding | `hs_bidding` |
-| hard-software-au/infolite-legacy | `infolite-legacy` |
-| hard-software-au/infolite-web-app | `infolite-web-app` |
-| hard-software-au/infrastructure | `infrastructure` |
-| hard-software-au/kennedy-esm | `kennedy-esm` |
-| hard-software-au/landing-page | `landing-page` |
-| hard-software-au/optigen-bidding | `optigen-bidding` |
-| hard-software-au/optigen-common | `optigen-common` |
-| hard-software-au/optigen-configuration | `optigen-configuration` |
-| hard-software-au/optigen-manager | `optigen-manager` |
-| hard-software-au/optigen-market-data-reader | `optigen-market-data-reader` |
-| hard-software-au/optigen-mongo-loader | `optigen-mongo-loader` |
-| hard-software-au/optigen-monitor | `optigen-monitor` |
-| hard-software-au/optigen-MQTT-dashboard | `optigen-MQTT-dashboard` |
-| hard-software-au/optigen-optimiser | `optigen-optimiser` |
-| hard-software-au/optigen-rut-reader | `optigen-rut-reader` |
-| hard-software-au/optigen-rut-writer | `optigen-rut-writer` |
-| hard-software-au/optigen-sql-loader | `optigen-sql-loader` |
-| hard-software-au/optigen-web-app | `optigen-web-app` |
-| hard-software-au/outage-alert-manger | `outage-alert-manger` |
-| hard-software-au/participant-pwd-reset | `participant-pwd-reset` |
-| hard-software-au/pydatafeed | `pydatafeed` |
-| hard-software-au/pydnp3 | `pydnp3` |
-| hard-software-au/pyqueueloader | `pyqueueloader` |
-| hard-software-au/pyscada | `pyscada` |
-| hard-software-au/Report-Checker | `Report-Checker` |
-| hard-software-au/short-term-forecasting | `short-term-forecasting` |
-| hard-software-au/signal-list-template | `signal-list-template` |
+| hard-software-au/generator-api                | `generator-api`                |
+| hard-software-au/generator-api-client-spec    | `generator-api-client-spec`    |
+| hard-software-au/gpg_auto-bidder-engine       | `gpg_auto-bidder-engine`       |
+| hard-software-au/gpg_generator-api            | `gpg_generator-api`            |
+| hard-software-au/hpr                          | `hpr`                          |
+| hard-software-au/hpr-app                      | `hpr-app`                      |
+| hard-software-au/hs_bidding                   | `hs_bidding`                   |
+| hard-software-au/infolite-legacy              | `infolite-legacy`              |
+| hard-software-au/infolite-web-app             | `infolite-web-app`             |
+| hard-software-au/infrastructure               | `infrastructure`               |
+| hard-software-au/kennedy-esm                  | `kennedy-esm`                  |
+| hard-software-au/landing-page                 | `landing-page`                 |
+| hard-software-au/optigen-bidding              | `optigen-bidding`              |
+| hard-software-au/optigen-common               | `optigen-common`               |
+| hard-software-au/optigen-configuration        | `optigen-configuration`        |
+| hard-software-au/optigen-manager              | `optigen-manager`              |
+| hard-software-au/optigen-market-data-reader   | `optigen-market-data-reader`   |
+| hard-software-au/optigen-mongo-loader         | `optigen-mongo-loader`         |
+| hard-software-au/optigen-monitor              | `optigen-monitor`              |
+| hard-software-au/optigen-MQTT-dashboard       | `optigen-MQTT-dashboard`       |
+| hard-software-au/optigen-optimiser            | `optigen-optimiser`            |
+| hard-software-au/optigen-rut-reader           | `optigen-rut-reader`           |
+| hard-software-au/optigen-rut-writer           | `optigen-rut-writer`           |
+| hard-software-au/optigen-sql-loader           | `optigen-sql-loader`           |
+| hard-software-au/optigen-web-app              | `optigen-web-app`              |
+| hard-software-au/outage-alert-manger          | `outage-alert-manger`          |
+| hard-software-au/participant-pwd-reset        | `participant-pwd-reset`        |
+| hard-software-au/pydatafeed                   | `pydatafeed`                   |
+| hard-software-au/pydnp3                       | `pydnp3`                       |
+| hard-software-au/pyqueueloader                | `pyqueueloader`                |
+| hard-software-au/pyscada                      | `pyscada`                      |
+| hard-software-au/Report-Checker               | `Report-Checker`               |
+| hard-software-au/short-term-forecasting       | `short-term-forecasting`       |
+| hard-software-au/signal-list-template         | `signal-list-template`         |

@@ -20,5 +20,5 @@ jobs:
     #   Ansible/IaC:        profiles: baseline,ansible
     uses: ./.github/workflows/reusable-pre-commit.yml
     with:
-      profiles: baseline  # TODO: replace with repo-specific list (e.g. baseline,python)
-      python-version: '3.11'
+      profiles: baseline # TODO: replace with repo-specific list (e.g. baseline,python)
+      python-version: "3.11"
