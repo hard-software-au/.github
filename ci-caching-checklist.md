@@ -17,7 +17,7 @@
 ## 2. Cache pre-commit hook environments
 
 - [x] Add an `actions/cache` step for `~/.cache/pre-commit`
-- [ ] Key the cache from:
+- [x] Key the cache from:
   - OS
   - Python version
   - selected profile string
@@ -33,7 +33,7 @@
 ## 3. Cache pip downloads used by the bootstrap step
 
 - [x] Enable pip caching in `actions/setup-python` or add an explicit cache for the pip download directory
-- [ ] Confirm the cache key is tied to Python version and dependency inputs derived from the selected profiles
+- [x] Confirm the cache key is tied to Python version and dependency inputs derived from the selected profiles
 - [ ] Measure whether `Install pre-commit and profile dependencies` drops on a second run
 
 **Why second:** lower impact than pre-commit environment reuse, but still cheap to maintain.
@@ -42,8 +42,8 @@
 
 ## 4. Re-measure before adding more complexity
 
-- [ ] Capture runtime before caching
-- [ ] Capture first run after caching is added
+- [x] Capture runtime before caching
+- [x] Capture first run after caching is added
 - [ ] Capture second run with warm caches
 - [ ] Decide whether the remaining runtime is acceptable without a container image
 
