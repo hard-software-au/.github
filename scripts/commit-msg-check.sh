@@ -10,6 +10,9 @@
 
 COMMIT_MSG_FILE="${1:-.git/COMMIT_EDITMSG}"
 
+# Use C locale for deterministic character class/range behavior in checks.
+export LC_ALL=C
+
 if [[ ! -f "$COMMIT_MSG_FILE" ]]; then
     echo "ERROR: commit message file not found: $COMMIT_MSG_FILE"
     exit 1
@@ -41,7 +44,7 @@ fi
 
 # Check 3: First letter must be capitalized
 FIRST_CHAR="${FIRST_LINE:0:1}"
-if [[ "$FIRST_CHAR" != [A-Z] ]]; then
+if [[ ! "$FIRST_CHAR" =~ ^[A-Z]$ ]]; then
     echo "ERROR: first letter must be capitalized"
     echo "  $FIRST_LINE"
     exit 1
