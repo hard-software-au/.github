@@ -16,7 +16,6 @@ name: Pre-commit Hooks
 on:
   pull_request:
   push:
-    branches: [main, master]
 
 jobs:
   pre-commit:

@@ -29,8 +29,7 @@ name: Pre-commit Hooks
 
 on:
   pull_request:
-  push:
-    branches: [main, master]
+    push:
 
 jobs:
   pre-commit:
@@ -133,7 +132,7 @@ pre-commit run --all-files --show-diff-on-failure
 
 A template workflow that repos can copy/customize. Includes:
 
-- Trigger on pull requests and pushes to main/master
+- Trigger on pull requests and on every branch push
 - Calls `reusable-pre-commit.yml` with profile list
 - Shows examples of profile combinations
 
