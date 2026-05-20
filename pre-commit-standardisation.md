@@ -163,7 +163,7 @@ Stage 3 complete (2026-05-19): Reusable CI workflow + template created. Profile 
 - [ ] Confirm reusable CI workflow is green on `.github` PRs using changed-files mode
 - [ ] Enforce branch protection in `.github`: pre-commit check must pass before merge
 - [ ] Gate: do not run `.github/rollout-devops-assets.sh` against any downstream repo until all items above are complete and merged to default branch
-- [ ] Add the files created in this stage to a .gitignore so they dont get deployed to an app server
+- [ ] Add the files created in this stage to a .gitignore so they don't get deployed to an app server
 
 ---
 

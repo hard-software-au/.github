@@ -98,9 +98,8 @@ jobs:
 
       - name: Normalize generated config for CI
         run: |
-          # Guardrail: enforce CI-safe settings even if an older profile revision is fetched.
+          # Guardrail: enforce CI-safe prettier behavior even if an older profile revision is fetched.
           sed -i.bak 's/entry: prettier --write/entry: prettier --check/g' .pre-commit-config.yaml
-          sed -i.bak '/id: detect-secrets/{n;s/language: script/language: system/;}' .pre-commit-config.yaml
           rm -f .pre-commit-config.yaml.bak
           echo "Normalized .pre-commit-config.yaml:"
           cat .pre-commit-config.yaml
@@ -169,16 +168,42 @@ jobs:
       - name: Run pre-commit checks (changed files only)
         run: |
           set -o pipefail
-          # On pull_request: check only the files changed in this PR.
-          # On push to main/master: check files changed in the pushed commit(s).
-          # This avoids failing on pre-existing unlinted code in the repo.
-          if [[ -n "${{ github.base_ref }}" ]]; then
-            FROM_REF="origin/${{ github.base_ref }}"
-            TO_REF="${{ github.sha }}"
-          else
-            # push event — diff against the previous commit
+          ZERO_SHA="0000000000000000000000000000000000000000"
+
+          ensure_commit_exists() {
+            local ref="$1"
+            [[ -z "$ref" ]] && return 1
+            git cat-file -e "${ref}^{commit}" 2>/dev/null && return 0
+            # If the commit object is missing locally, try a shallow fetch.
+            git fetch --no-tags --depth=1 origin "$ref" >/dev/null 2>&1 || return 1
+            git cat-file -e "${ref}^{commit}" 2>/dev/null
+          }
+
+          # Prefer event payload SHAs for PRs; these are stable and do not depend on remote-tracking refs.
+          if [[ -n "${{ github.event.pull_request.base.sha }}" && -n "${{ github.event.pull_request.head.sha }}" ]]; then
+            FROM_REF="${{ github.event.pull_request.base.sha }}"
+            TO_REF="${{ github.event.pull_request.head.sha }}"
+          elif [[ -n "${{ github.event.before }}" && "${{ github.event.before }}" != "$ZERO_SHA" ]]; then
+            # push event — diff against previous pushed commit
             FROM_REF="${{ github.event.before }}"
             TO_REF="${{ github.sha }}"
+          else
+            # Initial push (or missing before SHA): run full check to avoid invalid ref failures.
+            echo "No valid base ref found (initial push or missing event.before); running --all-files"
+            pre-commit run --all-files \
+              --verbose \
+              --color=always \
+              2>&1 | tee pre-commit.log
+            exit ${PIPESTATUS[0]}
+          fi
+
+          if ! ensure_commit_exists "$FROM_REF" || ! ensure_commit_exists "$TO_REF"; then
+            echo "Unable to resolve one or both refs ($FROM_REF -> $TO_REF); running --all-files"
+            pre-commit run --all-files \
+              --verbose \
+              --color=always \
+              2>&1 | tee pre-commit.log
+            exit ${PIPESTATUS[0]}
           fi
 
           pre-commit run \
@@ -187,6 +212,7 @@ jobs:
             --verbose \
             --color=always \
             2>&1 | tee pre-commit.log
+          exit ${PIPESTATUS[0]}
 
       - name: Upload pre-commit log on failure
         if: failure()

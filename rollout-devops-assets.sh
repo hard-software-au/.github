@@ -241,8 +241,8 @@ for REPO in ${(f)REPOS}; do
   git commit -m "$PR_TITLE"
 
   if ! git push origin "$PR_BRANCH" --quiet 2>/dev/null; then
-    # Branch already exists on remote — close the old PR (if any) and force-push
-    echo "  ⚠ branch already exists on remote — closing old PR and force-pushing"
+    # Branch already exists on remote — close old PR/delete branch (if any), then retry a normal push
+    echo "  ⚠ branch already exists on remote — closing old PR/deleting branch, then retrying push"
     OLD_PR=$(gh pr list --repo "hard-software-au/$REPO_NAME" \
       --head "$PR_BRANCH" --json number --jq '.[0].number' 2>/dev/null || true)
     if [[ -n "$OLD_PR" ]]; then

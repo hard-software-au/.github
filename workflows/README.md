@@ -9,7 +9,7 @@ A reusable GitHub Actions workflow that orchestrates pre-commit hook checks for 
 1. **Checks out the calling repo** to validate
 2. **Fetches org profiles** from the `.github` repo
 3. **Generates `.pre-commit-config.yaml`** by merging selected profiles
-4. **Runs pre-commit checks** against all files with `pre-commit run --all-files`
+4. **Runs pre-commit checks** in changed-files mode using `--from-ref/--to-ref`
 5. **Reports results** and fails the workflow if any check fails
 
 ### Inputs
@@ -69,8 +69,11 @@ Choose profiles based on your repo's tech stack:
    - Adds header marking it as auto-generated
 
 3. **Hook Execution:**
-   - `pre-commit run --all-files` with selected profiles
-   - Runs all hooks in the combined config
+   - Uses ref-diff mode: `pre-commit run --from-ref <base> --to-ref <head>`
+   - PRs use event payload SHAs (`pull_request.base.sha` -> `pull_request.head.sha`)
+   - Pushes use `event.before` -> `github.sha`
+   - Falls back to `pre-commit run --all-files` for initial pushes (empty/zero `before`) or unresolved refs
+   - Runs all selected hooks against files in the computed diff
    - Reports pass/fail for each hook
 
 4. **Artifact Upload:**
