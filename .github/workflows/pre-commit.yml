@@ -1,7 +1,7 @@
 name: Pre-commit Hooks
 
 # Source of truth: `workflows/pre-commit-template.yml`.
-# This file exists in `.github/workflows/` because GitHub Actions only executes workflows from this path.
+# This file exists in `.github/workflows/` because GitHub Actions only executes workflows from this path(.github/.github/workflows/).
 #
 # Redeploy process:
 # 1) Make changes in the source file above (and in `workflows/reusable-pre-commit.yml` if needed).
